@@ -1,0 +1,26 @@
+.ace_editor {
+    width: 100%; 
+    min-width: 30em;
+    height: auto; 
+    border: 1px solid #ccc;
+    margin: 0.5em 0;
+}
+
+.student-answer.has-warnings .ace_editor {
+    border-top-style: dashed;
+    border-left-style: dashed;
+    border-right-style: dashed;
+    border-color: hsl(30,20%,50%);
+    background: hsl(30,20%,95%);
+}
+.part:not(.dirty) > .student-answer.answered[feedback-state='correct'] .ace_editor {
+    border-color: hsl(120, 50%, 50%);
+    background: hsl(120, 50%, 95%);
+}
+.part:not(.dirty) > .student-answer.answered[feedback-state='wrong'] .ace_editor {
+    border-color: hsl(0, 50%, 50%);
+    background: hsl(0, 50%, 95%);
+}
+.part:not(.dirty) > .student-answer.answered[feedback-state='partial'] .ace_editor {
+    background: white;
+}

@@ -1,0 +1,214 @@
+{
+    "source": {
+        "author": {
+            "name": "Christian Lawson-Perfect"
+        }
+    },
+    "name": "Code",
+    "short_name": "mark-code-3",
+    "description": "<p>Mark code provided by the student by running it and a series of validation and marking tests.</p>\n<p>The validation tests are used to reject an answer if the student has misunderstood the task, for example if they haven't defined a required variable or function.</p>\n<p>Marking tests check properties of the student's code. Each test awards a proportion of the available credit if it is passed.</p>\n<p>You can optionally show the student the STDOUT and/or STDERR when running their code.</p>\n<p>You can give a preamble and postamble which are run before and after the student's code, and also modify the student's code before running it.</p>",
+    "help_url": "",
+    "input_widget": "code-editor",
+    "input_options": {
+        "correctAnswer": "settings['correct_answer']",
+        "hint": {
+            "static": true,
+            "value": ""
+        },
+        "language": {
+            "static": false,
+            "value": "language_synonym(settings[\"code_language\"])"
+        },
+        "placeholder": {
+            "static": false,
+            "value": "render(settings['placeholder'])"
+        },
+        "theme": {
+            "static": true,
+            "value": "textmate"
+        }
+    },
+    "can_be_gap": true,
+    "can_be_step": true,
+    "marking_script": "mark:\napply(main_error);\napply(validation_test_feedback);\napply(marking_test_feedback)\n\ninterpreted_answer:\nstudentAnswer\n\nmain_result:\ncode_result[2]\n\nmarking_results:\ncode_result[4..(len(settings[\"tests\"])+4)]\n\nvalidation_results:\ncode_result[(len(settings[\"tests\"])+4)..len(code_result)]\n\nmain_error:\nassert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nif(main_result[\"success\"],\n  positive_feedback(\"Your code runs without errors.\")\n,\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)\n\nmarking_test_feedback:\nmap(\n  let([name,weight,code], test,\n    feedback(\"\"\"<strong>Test: {name}</strong>\"\"\");\n    if(r[\"success\"],\n      if(r[\"result\"],\n        add_credit(weight/total_weight,\"This test was passed.\")\n      ,\n        negative_feedback(\"This test was not passed.\")\n      )\n    ,\n      negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)\n\nvalidation_test_feedback:\nmap(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)\n\ntotal_weight:\nsum(map(weight,[name,weight,code],settings[\"tests\"]))\n\npre_submit:\n[run_code(code_language,\n  [\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"])\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]\n\ncode_result:\npre_submit[\"code_result\"]\n\nmain_stdout:\ntrim(main_result[\"stdout\"] + \"\\n\" + code_result[3][\"stdout\"])\n\ncode_language:\nsettings[\"code_language\"]",
+    "marking_notes": [
+        {
+            "name": "mark",
+            "description": "This is the main marking note. It should award credit and provide feedback based on the student's answer.",
+            "definition": "apply(main_error);\napply(validation_test_feedback);\napply(marking_test_feedback)"
+        },
+        {
+            "name": "interpreted_answer",
+            "description": "A value representing the student's answer to this part.",
+            "definition": "studentAnswer"
+        },
+        {
+            "name": "main_result",
+            "description": "<p>The result of running the student's code and the preamble, without any tests.</p>\n<p>Normally used to detect errors in the student's code.</p>",
+            "definition": "code_result[2]"
+        },
+        {
+            "name": "marking_results",
+            "description": "<p>The results of running the marking tests.</p>\n<p>A list of dictionaries, each containing keys:</p>\n<ul>\n<li>name - the name of the test</li>\n<li>credit - the proportion of the available credit to award if this test is passed.</li>\n<li>code - the code of the test</li>\n<li>result - the result of running the test.</li>\n</ul>",
+            "definition": "code_result[4..(len(settings[\"tests\"])+4)]"
+        },
+        {
+            "name": "validation_results",
+            "description": "<p>The results of running the validation tests. A list of dictionaries, each containing keys:</p>\n<ul>\n<li>name - the name of the test</li>\n<li>code - the code of the test</li>\n<li>result - the result of running the test.</li>\n</ul>",
+            "definition": "code_result[(len(settings[\"tests\"])+4)..len(code_result)]"
+        },
+        {
+            "name": "main_error",
+            "description": "<p>Show STDOUT if allowed.</p>\n<p>Check the student's code runs on its own. Fail if there was an error, and show STDERR if allowed.</p>",
+            "definition": "assert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nif(main_result[\"success\"],\n  positive_feedback(\"Your code runs without errors.\")\n,\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)"
+        },
+        {
+            "name": "marking_test_feedback",
+            "description": "<p>Feedback on the marking tests. For each test, if the test was passed then add the corresponding amount of credit. If there was an error, show the error.</p>",
+            "definition": "map(\n  let([name,weight,code], test,\n    feedback(\"\"\"<strong>Test: {name}</strong>\"\"\");\n    if(r[\"success\"],\n      if(r[\"result\"],\n        add_credit(weight/total_weight,\"This test was passed.\")\n      ,\n        negative_feedback(\"This test was not passed.\")\n      )\n    ,\n      negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)"
+        },
+        {
+            "name": "validation_test_feedback",
+            "description": "<p>Give feedback on the validation tests. If any of them are not passed, the student's answer is invalid.</p>",
+            "definition": "map(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)"
+        },
+        {
+            "name": "total_weight",
+            "description": "<p>The sum of the weights of the marking tests. Each test's weight is divided by this to produce a proportion of the available credit.</p>",
+            "definition": "sum(map(weight,[name,weight,code],settings[\"tests\"]))"
+        },
+        {
+            "name": "pre_submit",
+            "description": "",
+            "definition": "[run_code(code_language,\n  [\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"])\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]"
+        },
+        {
+            "name": "code_result",
+            "description": "",
+            "definition": "pre_submit[\"code_result\"]"
+        },
+        {
+            "name": "main_stdout",
+            "description": "",
+            "definition": "trim(main_result[\"stdout\"] + \"\\n\" + code_result[3][\"stdout\"])"
+        },
+        {
+            "name": "code_language",
+            "description": "",
+            "definition": "settings[\"code_language\"]"
+        }
+    ],
+    "settings": [
+        {
+            "name": "code_language",
+            "label": "Code language",
+            "help_url": "",
+            "hint": "The language that the student's code will be written in.",
+            "input_type": "dropdown",
+            "default_value": "pyodide",
+            "choices": [
+                {
+                    "value": "pyodide",
+                    "label": "Python"
+                },
+                {
+                    "value": "webr",
+                    "label": "R"
+                }
+            ]
+        },
+        {
+            "name": "correct_answer",
+            "label": "Correct answer",
+            "help_url": "",
+            "hint": "A correct answer to the part.",
+            "input_type": "code",
+            "default_value": "",
+            "evaluate": false
+        },
+        {
+            "name": "show_stdout",
+            "label": "Show stdout?",
+            "help_url": "",
+            "hint": "If ticked, the STDOUT produced after running the student's code will be shown in the feedback.",
+            "input_type": "checkbox",
+            "default_value": true
+        },
+        {
+            "name": "show_stderr",
+            "label": "Show stderr?",
+            "help_url": "",
+            "hint": "If ticked, the STDERR produced after running the student's code will be shown in the feedback.",
+            "input_type": "checkbox",
+            "default_value": true
+        },
+        {
+            "name": "placeholder",
+            "label": "Placeholder",
+            "help_url": "",
+            "hint": "Initial text for the code editor",
+            "input_type": "code",
+            "default_value": "",
+            "evaluate": false
+        },
+        {
+            "name": "modifier",
+            "label": "Student code modifier",
+            "help_url": "",
+            "hint": "JME expression to modify the student's submitted code before being passed to the marking template. The student's code is available as the string variable <code>studentAnswer</code>.",
+            "input_type": "code",
+            "default_value": "",
+            "evaluate": false
+        },
+        {
+            "name": "preamble",
+            "label": "Preamble",
+            "help_url": "",
+            "hint": "This code is run before the student's code. Define anything that the student's code or your tests need.",
+            "input_type": "code",
+            "default_value": "",
+            "evaluate": false
+        },
+        {
+            "name": "postamble",
+            "label": "Postamble",
+            "help_url": "",
+            "hint": "This code is run after the student's code but before the validation and unit tests.",
+            "input_type": "code",
+            "default_value": "",
+            "evaluate": false
+        },
+        {
+            "name": "tests",
+            "label": "Marking tests",
+            "help_url": "",
+            "hint": "A list of tests used to mark the student's answer.<br />Each item is a list with three values:<br />\n<ul>\n<li>The name of the test, shown to the student above any feedback.</li>\n<li>The proportion of the credit available for the part to award if this test is passed.</li>\n<li>The code to run.</li>\n</ul>",
+            "input_type": "code",
+            "default_value": "[\n  [\"Test 1\", 1, \"True\"]\n]",
+            "evaluate": true
+        },
+        {
+            "name": "validation_tests",
+            "label": "Validation tests",
+            "help_url": "",
+            "hint": "<p>A list of tests used to validate that the student's code is acceptable.<br />Each item is a list with two string values:</p>\n<ul>\n<li>A name which will be shown to the student if the test fails.</li>\n<li>The code to run.</li>\n</ul>",
+            "input_type": "code",
+            "default_value": "[\n  [\"arithmetic works\", \"1+1 == 2\"]\n]",
+            "evaluate": true
+        },
+        {
+            "name": "variables",
+            "label": "Variables to include in code",
+            "help_url": "",
+            "hint": "Give a dictionary mapping variable names to their values. These variables will be available in the code that is run.",
+            "input_type": "code",
+            "default_value": "dict()",
+            "evaluate": true
+        }
+    ],
+    "public_availability": "always",
+    "published": true,
+    "extensions": [
+        "programming"
+    ]
+}
