@@ -82,7 +82,7 @@ The following options can be set:
 
 Return the name of the language corresponding to the given runner.
 
-``"pyodide"` returns `"python"`; `"webr"` returns `"r"`.
+`"pyodide"` returns `"python"`; `"webr"` returns `"r"`.
 
 ## Adding another language
 
