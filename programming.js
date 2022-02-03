@@ -3,7 +3,7 @@
  * by Chris Graham and Christian Lawson-Perfect & George Stagg, Newcastle University, 2020-2022
  *
  */
-Numbas.addExtension('programming',['display','util','jme'],function(programming) {
+Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programming) {
 
 /////////////////////////// PREAMBLE
 
@@ -27,14 +27,14 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
      */
     const load_script = programming.load_script = function(url) {
         var script = document.createElement('script');
-        script.setAttribute('src',url);
+        script.setAttribute('src', url);
         document.head.appendChild(script);
         return script;
     }
 
 //////////////////////////// CODE EDITOR WIDGET
 
-    Numbas.loadStandaloneScript('programming','ace/ace.js');
+    Numbas.loadStandaloneScript('programming', 'ace/ace.js');
 
     /** A promise which resolves when ace.js has put the `ace` object into the global scope.
      */
@@ -44,7 +44,7 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
                 clearInterval(checkInterval);
                 resolve(window.ace);
             }
-        },100);
+        }, 100);
     });
 
     /** An ace code editor input widget for a part.
@@ -83,7 +83,7 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
             }
             editor.renderer.setScrollMargin(10, 10);
 
-            editor.session.on('change',function(e) {
+            editor.session.on('change', function(e) {
                 if(ce.setting_value) {
                     return;
                 }
@@ -104,10 +104,10 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
 
             if(ce.events) {
                 for(var x in ce.events) {
-                    editor.on(x,ce.events[x]);
+                    editor.on(x, ce.events[x]);
                 }
             }
-            element.addEventListener('keypress',function(e) {
+            element.addEventListener('keypress', function(e) {
                 e.stopPropagation();
             });
 
@@ -322,7 +322,7 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
          */
         new_job() {
             const job_id = this.job_id_acc++;
-            const promise = new Promise((resolve,reject) => {
+            const promise = new Promise((resolve, reject) => {
                 this.jobs[job_id] = { id: job_id, resolve, reject };
             });
             const job = this.jobs[job_id];
@@ -417,7 +417,7 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
     class PyodideRunner extends CodeRunner {
         constructor() {
             super();
-            var worker = this.worker = new Worker(Numbas.getStandaloneFileURL('programming','pyodide_worker.js'));
+            var worker = this.worker = new Worker(Numbas.getStandaloneFileURL('programming', 'pyodide_worker.js'));
 
             /* // Needs a cross-origin isolated context, which I can't work out how to achieve.
             this.interruptBuffer = new Uint8Array(new SharedArrayBuffer(1));
@@ -458,7 +458,7 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
     }
     programming.PyodideRunner = PyodideRunner;
 
-    register_language_runner('pyodide',PyodideRunner);
+    register_language_runner('pyodide', PyodideRunner);
 
     /** Load webR - inserts the script in the page, and returns a promise which resolves to the `webR` object. 
      * @returns {Promise.<webR>}
@@ -508,7 +508,7 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
                             });
                             resolve(webR);
                         }
-                    },50);
+                    }, 50);
                 });
             }
             return this.webRPromise;
@@ -621,7 +621,7 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
             return tok.value ? 'True' : 'False';
         },
         'range': function(tok) {
-            return 'range('+tok.value[0]+','+tok.value[1]+','+tok.value[2]+')';
+            return 'range('+tok.value[0]+', '+tok.value[1]+', '+tok.value[2]+')';
         },
         'list': function(tok) {
             return '['+tok.value.map(wrapPython).join(', ')+']';
@@ -669,7 +669,7 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
 
     /** Produce a line of code which assigns the given expression to the given name.
      * @param {string} language
-     * @returns {Function.<string,string>}
+     * @returns {Function.<string, string>}
      */
     var assignVariable = programming.assignVariable = function(language) {
         language = language_synonym(language);
@@ -690,8 +690,8 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
             var wrapper = types[token.type];
             if(!wrapper) {
                 for(var x in types) {
-                    if(jme.isType(token,x)) {
-                        token = jme.castToType(token,x);
+                    if(jme.isType(token, x)) {
+                        token = jme.castToType(token, x);
                         wrapper = types[x];
                         break;
                     }
@@ -761,7 +761,7 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
 
     /** Render some Numbas variables as assignment expressions in the target language.
      */
-    programming.scope.addFunction(new funcObj('variables_as_code',[TString, TDict], TString, function(language, variables) {
+    programming.scope.addFunction(new funcObj('variables_as_code', [TString, TDict], TString, function(language, variables) {
         var vars = [];
         Object.entries(variables).forEach(function(e) {
             var name = e[0];
@@ -773,14 +773,14 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
   
     /** Return the synonym for given code language
      */
-    programming.scope.addFunction(new funcObj('language_synonym',[TString], TString, function(language) {
+    programming.scope.addFunction(new funcObj('language_synonym', [TString], TString, function(language) {
         return language_synonym(language);
     }));
 
     /** Start a pre-submit task to mark some code against some unit tests.
      */
-    programming.scope.addFunction(new funcObj('run_code',['string','list of string'],types.TPromise, null, {
-        evaluate: function(args,scope) {
+    programming.scope.addFunction(new funcObj('run_code', ['string', 'list of string'], types.TPromise, null, {
+        evaluate: function(args, scope) {
             var language = args[0].value;
             var codes = args[1];
             return new types.TPromise(run_code(language, jme.unwrapValue(codes)).then(function(result) {
@@ -791,11 +791,47 @@ Numbas.addExtension('programming',['display','util','jme'],function(programming)
 
     /** Render a static code block.
      */
-    programming.scope.addFunction(new funcObj('code_block',[TString, sig.optional(sig.type('dict'))], types.THTML, null, {
+    programming.scope.addFunction(new funcObj('code_block', [TString, sig.optional(sig.type('dict'))], types.THTML, null, {
         evaluate: function(args, scope) {
             var code = jme.unwrapValue(args[0]);
             var options = jme.unwrapValue(args[1]);
-            return new types.THTML(render_code_block(code,options));
+            return new types.THTML(render_code_block(code, options));
         }
     }));
+
+
+    function add_jme_marking_test(test_name, fn, args) {
+        args = (args || [TString]).slice();
+        args.push(TNum);
+        programming.scope.addFunction(new funcObj(test_name, args, TList, null, {
+            evaluate: function(args,scope) {
+                const [desc, code] = fn(args.slice(0,args.length-1).map(arg=>Numbas.jme.unwrapValue(arg)));
+                const weight = args[args.length-1].value;
+                return Numbas.jme.wrapValue([desc, weight, code]);
+            }
+        }));
+    }
+
+    function add_jme_validation_test(test_name, fn, args) {
+        args = (args || [TString]).slice();
+        programming.scope.addFunction(new funcObj(test_name, args, TList, null, {
+            evaluate: function(args,scope) {
+                const [desc, code] = fn(...args.map(arg => Numbas.jme.unwrapValue(arg)));
+                return Numbas.jme.wrapValue([desc, code]);
+            }
+        }));
+    }
+
+    programming.scope.addFunction(new funcObj('py_mark_equal', [TString, '?', sig.optional(sig.type('number'))], [TList], null, {
+        evaluate: function(args,scope) {
+            var name = args[0].value;
+            var value = wrapToken('python')(args[1]);
+            var weight = args[2].type=='nothing' ? 1 : args[2].value;
+            return Numbas.jme.wrapValue([`${name} == ${value}`, weight, `${name} == ${value}`]);
+        }
+    }));
+
+    add_jme_validation_test('py_valid_defined', name => [`${name} is defined`, `'${name}' in locals()`]);
+    add_jme_validation_test('py_valid_callable', name => [`${name} is a function`, `'${name}' in locals() and callable(${name})`]);
+    add_jme_validation_test('py_valid_isinstance', (name,type) => [`${name} has type ${type}`, `'${name}' in locals() and isinstance(${name},${type})`], [TString, TString]);
 });

@@ -84,6 +84,20 @@ Return the name of the language corresponding to the given runner.
 
 `"pyodide"` returns `"python"`; `"webr"` returns `"r"`.
 
+### Marking functions
+
+There are a few functions to produce common marking tests:
+
+* `py_mark_equal(name,value,[weight=1])` - Checks that the variable with the given name has the given value. The name should be a string, but the value can be any JME value. Example: `py_mark_equal('x', 1)`
+
+### Validation functions
+
+There are a few functions to produce common validation tests:
+
+* `py_valid_defined(name)` - Checks that a variable with the given name has been defined - equivalent to `'name' in locals()`.
+* `py_valid_callable(name)` - Checks that the object with the given name has been defined and is callable - equivalent to `'name' in locals() and callable(name)`. 
+* `py_valid_isinstance(name,type)` - Checks that the object with the given name has been defined and is an instance of the given type - equivalent to `'name' in locals() and isinstance(name, type)`.
+
 ## Adding another language
 
 The class `Numbas.extensions.programming.CodeRunner` contains methods for running code in a particular language.
