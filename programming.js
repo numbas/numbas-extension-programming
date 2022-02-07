@@ -7,7 +7,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
 /////////////////////////// PREAMBLE
 
-    programming.webR_url = 'https://cdn.jsdelivr.net/gh/georgestagg/webR@7fd30e7af002b86f3b213ed338e7b055423b6466/dist/';
+    programming.webR_url = 'https://cdn.jsdelivr.net/gh/georgestagg/webR@922fa6a034a4fe5a4252f5161406a680456f315f/dist/';
 
     var jme = Numbas.jme;
     var types = jme.types;
@@ -498,7 +498,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     var checkInterval = setInterval(async () => {
                         if(window.loadWebR) {
                             clearInterval(checkInterval);
-                            const webR = await loadWebR({ 
+                            const webR = await loadWebR({
+                                WEBR_URL: programming.webR_url,
+                                loadPackages: ['ncldata', 'svglite'],
                                 stdout: (s) => { 
                                     this.buffers.stdout.push(s); 
                                 }, 
