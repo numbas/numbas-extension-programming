@@ -6,8 +6,8 @@
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.19.0/full/pyodide.js");
 
 
-self.stdout = '';
-self.stderr = '';
+self.stdout = [];
+self.stderr = [];
 
 self.pyodidePromise;
 
@@ -15,18 +15,11 @@ async function init() {
     if(self.pyodidePromise) {
         return self.pyodidePromise;
     }
-    // for some reason, each call to stdout is made twice, so ignore every other call.
-    let stdoutswap = 0;
     self.pyodidePromise = new Promise(async (resolve,reject) => {
         self.pyodide = await loadPyodide({
             indexURL: "https://cdn.jsdelivr.net/pyodide/v0.19.0/full/",
-            stdout: s => {
-                stdoutswap = !stdoutswap;
-                if(stdoutswap) {
-                    self.stdout += s;
-                }
-            },
-            stderr: s => self.stderr += s
+            stdout: s => self.stdout.push(s),
+            stderr: s => self.stderr.push(s)
         });
         resolve(self.pyodide);
     });
@@ -54,10 +47,9 @@ self.onmessage = async (event) => {
             break;
         case 'runPython': 
             const { job_id, code, namespace_id } = event.data;
-            console.log(`job ${job_id} in namespace ${namespace_id}: ${code}`);
 
-            self.stdout = '';
-            self.stderr = '';
+            self.stdout = [];
+            self.stderr = [];
 
             const namespace = await self.get_namespace(namespace_id);
 
@@ -67,15 +59,15 @@ self.onmessage = async (event) => {
                 self.postMessage({
                     result,
                     job_id,
-                    stdout: self.stdout,
-                    stderr: self.stderr
+                    stdout: self.stdout.join('\n'),
+                    stderr: self.stderr.join('\n')
                 });
             } catch (error) {
                 self.postMessage({
                     error: error.message,
                     job_id,
-                    stdout: self.stdout,
-                    stderr: [self.stderr,error.message].filter(x=>x!='').join('\n')
+                    stdout: self.stdout.join('\n'),
+                    stderr: self.stderr.concat([error.message]).filter(x=>x!='').join('\n')
                 });
             }
             break;
