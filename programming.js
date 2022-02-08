@@ -545,11 +545,15 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             this.load_webR().then(async (webR) => {
                 try {
                     const result = await webR.runRAsync(code);
-                    job.resolve({
-                        result: this.last_stdout_line() === "[1] TRUE",
-                        stdout: this.stdout,
-                        stderr: this.stderr,
-                    });
+                    if(result===-1) {
+                        throw(new Error("Error running R code"));
+                    } else {
+                        job.resolve({
+                            result: this.last_stdout_line() === "[1] TRUE",
+                            stdout: this.stdout,
+                            stderr: this.stderr,
+                        });
+                    }
                 } catch(err) {
                     this.buffers.stderr.push(err);
                     job.reject({
