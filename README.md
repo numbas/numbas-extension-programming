@@ -71,7 +71,7 @@ The `variables` argument is a dictionary mapping variable names to values.
 
 Display some code in a syntax-highlighted code area.
 
-The `options` argument is an optional dictionary of options.
+The `options` argument is an optional dictionary of options, or just the name of the language to use for syntax highlighting.
 The following options can be set:
 
 * `language` - The language to use for syntax highlighting.

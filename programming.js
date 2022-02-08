@@ -222,6 +222,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
      * @returns {Element}
      */
     var render_code_block = programming.render_code_block = function(code, options) {
+        if(typeof options=='string') {
+            options = {language: options};
+        }
         options = options || {};
         var element = document.createElement('div');
         element.classList.add('ace-editor-container');
@@ -709,55 +712,6 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     var wrapPython = programming.wrapPython = wrapToken('python');
     var wrapR = programming.wrapR = wrapToken('r');
 
-    /** Options for `render_code_block`.
-     *
-     * @typedef {Numbas.extensions.programming.render_code_block_options}
-     * @property {string} language - The language to use for syntax highlighting.
-     * @property {boolean} gutter - Show the gutter? (default: `false`)
-     * @property {string} theme - The theme to use? (default: `ace/theme/textmate`)
-     */
-
-    /** Produce a read-only ACE code editor containing the given code.
-     * @param {string} code - The code to display.
-     * @param {Numbas.extensions.programming.render_code_block_options} options
-     * @returns {Element}
-     */
-    var render_code_block = programming.render_code_block = function(code, options) {
-        options = options || {};
-        var element = document.createElement('div');
-        element.classList.add('ace-editor-container');
-
-        acePromise.then(function(ace) {
-            var div = document.createElement('div');
-            div.classList.add('acediv');
-            element.appendChild(div);
-            var editor = ace.edit(div);
-            editor.setValue(code);
-            editor.clearSelection();
-            editor.setTheme(options.theme || "ace/theme/textmate");
-            if(options.language) {
-                editor.session.setMode("ace/mode/"+options.language);
-            }
-            editor.setShowPrintMargin(false);
-            editor.setHighlightActiveLine(false);
-            editor.setReadOnly(true);
-            editor.setOptions({
-                maxLines: Infinity
-            });
-            editor.renderer.setShowGutter(options.gutter);
-            editor.setOptions({
-                fontFamily: "monospace",
-                fontSize: "12pt"
-            });
-            editor.renderer.setScrollMargin(10, 10);
-            editor.renderer.$cursorLayer.element.style.display = "none";
-            return editor;
-        })
-
-        return element;
-    };
-
-
 //////////////////////////// JME FUNCTIONS
 
 
@@ -793,7 +747,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
     /** Render a static code block.
      */
-    programming.scope.addFunction(new funcObj('code_block', [TString, sig.optional(sig.type('dict'))], types.THTML, null, {
+    programming.scope.addFunction(new funcObj('code_block', [TString, '[dict or string]'], types.THTML, null, {
         evaluate: function(args, scope) {
             var code = jme.unwrapValue(args[0]);
             var options = jme.unwrapValue(args[1]);
