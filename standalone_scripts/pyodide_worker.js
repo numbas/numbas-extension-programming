@@ -56,6 +56,7 @@ self.onmessage = async (event) => {
             try {
                 await self.pyodide.loadPackagesFromImports(code);
                 let result = await self.pyodide.runPythonAsync(code, namespace);
+                namespace.set('_',result);
                 self.postMessage({
                     result,
                     job_id,
