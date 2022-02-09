@@ -56,6 +56,9 @@ self.onmessage = async (event) => {
             try {
                 await self.pyodide.loadPackagesFromImports(code);
                 let result = await self.pyodide.runPythonAsync(code, namespace);
+                if(result !== undefined && result.type == 'numpy.bool_') {
+                    result = (result+'') == 'True';
+                }
                 namespace.set('_',result);
                 self.postMessage({
                     result,
