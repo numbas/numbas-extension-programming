@@ -794,4 +794,49 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     add_jme_validation_test('py_valid_defined', name => [`${name} is defined`, `'${name}' in locals()`]);
     add_jme_validation_test('py_valid_callable', name => [`${name} is a function`, `'${name}' in locals() and callable(${name})`]);
     add_jme_validation_test('py_valid_isinstance', (name,type) => [`${name} has type ${type}`, `'${name}' in locals() and isinstance(${name},${type})`], [TString, TString]);
+
+    programming.mime_types = {
+      '.pdf': 'application/pdf',
+      '.svg': 'image/svg+xml'
+    }
+
+    programming.scope.addFunction(new funcObj('r_load_files', ['string or (list of string)'], types.TPromise, null, {
+        evaluate: function(args,scope) {
+            var filenames;
+            if(args[0].type=='string') {
+                filenames = [args[0].value];
+            } else {
+                filenames = Numbas.jme.unwrapValue(args[0]);
+            }
+            return new types.TPromise(programming.language_runners['webr'].load_webR().then(async (webR) => {
+                var promises = [];
+                files.forEach(filename => {
+                    promises.push(new Promise((resolve,reject) => {
+                        setTimeout(async function() {
+                            try {
+                                const buf = await webR.getFileData(filename);
+                                const extension = filename.match(/\.[^.]*$/)[0];
+                                const mime_type = mime_types[extension] || 'text/plain';
+                                var blob = new Blob([buf], {type: mime_type});
+                                if(mime_type == 'text/plain' || mime_type == 'image/svg+xml') {
+                                    const text = await blob.text();
+                                    resolve({exists: true, text: text, mime_type});
+                                } else {
+                                    resolve({exists: true, blob: URL.createObjectURL(blob), mime_type});
+                                }
+                            } catch(err) {
+                                resolve({exists: false, error: err.message});
+                            }
+                        },10);
+                    }));
+                });
+                const results = await Promise.all(promises);
+                var o = {};
+                results.forEach((value,i) => { o[files[i]] = jme.wrapValue(value); });
+                return {
+                    r_files: new Numbas.jme.types.TDict(o)
+                }
+            }));
+        }
+    }));
 });

@@ -107,3 +107,17 @@ Then call `Numbas.extensions.programming.register_language_runner(name, runner)`
 Only one instance of the class will ever be created.
 
 See the `PyodideRunner` and `WebRRunner` classes in this extension for examples of how to implement a runner.
+
+## Functions specific to R
+
+### `r_load_files(files)`
+
+Read the contents of the given files and return the result in a `promise`, to be used by a pre-submit task.
+
+When run in the `pre_submit` note, this task adds an entry `r_files`, a list containing information about each of the files:
+
+* `exists` - `true` if the file was loaded successfully, `false` if not.
+* `text` - if the file contains text, the contents of the file as a string.
+* `blob` - if the file is binary, a blob URL representing the file's contents. You can use a blob URL as the `src` attribute for an `img` or `iframe` tag.
+
+At the moment, only PDF files are recognised as binary. You can register other file types as binary by adding an entry to the JavaScript object `Numbas.extensions.programming.mime_types`.
