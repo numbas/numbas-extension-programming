@@ -7,7 +7,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
 /////////////////////////// PREAMBLE
 
-    programming.webR_url = 'https://cdn.jsdelivr.net/gh/georgestagg/webR@d925336a5188373eff9fae9916ded02cc9769ddd/dist/';
+    programming.webR_url = 'https://cdn.jsdelivr.net/gh/georgestagg/webR@452ae1637dfdd65c9a5f462fff439022d833f8f9/dist/';
 
     var jme = Numbas.jme;
     var types = jme.types;
