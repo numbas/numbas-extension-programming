@@ -344,6 +344,14 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             return this.jobs[job_id];
         }
 
+        /** Get a promise that resolves once all jobs have fully resolved.
+         * @returns {Promise}
+         */
+        get_queue() {
+            const job_promises = Object.entries(this.jobs).map(([k,job]) => job.promise);
+            return Promise.all(job_promises);
+        }
+
         /** Run some code in this runner, in the given namespace.
          * @param {string} code - The code to run.
          * @param {namespace_id} namespace_id - The ID of the namespace to run the code in.
@@ -441,12 +449,15 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             }
         }
         run_code(code, namespace_id) {
+            const queue = this.get_queue();
             const job = this.new_job();
-            this.worker.postMessage({
-                command: 'runPython',
-                job_id: job.id,
-                namespace_id: namespace_id,
-                code: code
+            queue.then( _ => {
+                this.worker.postMessage({
+                    command: 'runPython',
+                    job_id: job.id,
+                    namespace_id: namespace_id,
+                    code: code
+                });
             });
             return job;
         }
@@ -535,33 +546,36 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         }
 
         run_code(code, namespace_id) {
+            const queue = this.get_queue();
             const job = this.new_job();
-            this.clear_buffers();
+            queue.then( _ => {
+                this.clear_buffers();
 
-            if(namespace_id !== undefined) {
-                code = `with(${this.namespace_name(namespace_id)}, {\n${code}\n})`;
-            }
+                if(namespace_id !== undefined) {
+                    code = `with(${this.namespace_name(namespace_id)}, {\n${code}\n})`;
+                }
 
-            this.load_webR().then(async (webR) => {
-                try {
-                    const result = await webR.runRAsync(code);
-                    if(result===-1) {
-                        throw(new Error("Error running R code"));
-                    } else {
-                        job.resolve({
-                            result: this.last_stdout_line() === "[1] TRUE",
+                this.load_webR().then(async (webR) => {
+                    try {
+                        const result = await webR.runRAsync(code);
+                        if(result===-1) {
+                            throw(new Error("Error running R code"));
+                        } else {
+                            job.resolve({
+                                result: this.last_stdout_line() === "[1] TRUE",
+                                stdout: this.stdout,
+                                stderr: this.stderr,
+                            });
+                        }
+                    } catch(err) {
+                        this.buffers.stderr.push(err);
+                        job.reject({
+                            error: err.message,
                             stdout: this.stdout,
-                            stderr: this.stderr,
+                            stderr: this.stderr
                         });
-                    }
-                } catch(err) {
-                    this.buffers.stderr.push(err);
-                    job.reject({
-                        error: err.message,
-                        stdout: this.stdout,
-                        stderr: this.stderr
-                    });
-                }; 
+                    };
+                });
             });
 
             return job;
