@@ -17,8 +17,6 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     var TNum = types.TNum;
     var TList = types.TList;
     var unwrap = jme.unwrapValue;
-    var marking = Numbas.marking;
-    var feedback = marking.feedback;
     var sig = Numbas.jme.signature;
 
     /** Load a remote script file.
@@ -275,6 +273,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     /** An object which can run code in a certain language.
      */
     class CodeRunner {
+        queue = Promise.resolve();
+
         constructor() {
             this.job_id_acc = 0;
             this.jobs = {};
@@ -342,6 +342,19 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                 throw(new Error("Unrecognised job id "+job_id));
             }
             return this.jobs[job_id];
+        }
+
+        /** Queue tasks: the given callback function is called only after everything else in the queue, and subsequent queued tasks only run after this one has resolved.
+         * @param {Function} fn - Must return a Promise.
+         * @returns {Promise}
+         */
+        async enqueue(fn) {
+            this.queue = this.queue.then(() => {
+                const qr = fn();
+                return qr;
+            });
+            const r = await this.queue;
+            return r;
         }
 
         /** Run some code in this runner, in the given namespace.
@@ -535,15 +548,16 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         }
 
         run_code(code, namespace_id) {
-            const job = this.new_job();
-            this.clear_buffers();
-
             if(namespace_id !== undefined) {
                 code = `with(${this.namespace_name(namespace_id)}, {\n${code}\n})`;
             }
 
-            this.load_webR().then(async (webR) => {
+            return this.enqueue(async () => {
+                const job = this.new_job();
+
+                const webR = await this.load_webR();
                 try {
+                    this.clear_buffers();
                     const result = await webR.runRAsync(code);
                     if(result===-1) {
                         throw(new Error("Error running R code"));
@@ -561,10 +575,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                         stdout: this.stdout,
                         stderr: this.stderr
                     });
-                }; 
+                };
+                return job;
             });
-
-            return job;
         }
     }
     programming.WebRRunner = WebRRunner;
