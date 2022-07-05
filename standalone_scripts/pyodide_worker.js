@@ -36,10 +36,6 @@ self.get_namespace = async function(id) {
     return self.namespaces[id];
 }
 
-class ConversionError extends Error {
-    name = 'ConversionError'
-}
-
 self.onmessage = async (event) => {
     await init();
 
@@ -69,7 +65,15 @@ self.onmessage = async (event) => {
                             create_pyproxies: false
                         });
                     } catch(e) {
-                        throw(new ConversionError(`Can't convert from type ${result.type}`, {cause: e}))
+                        self.postMessage({
+                            conversion_error: `Can't convert from type ${result.type}`,
+                            result: null,
+                            job_id,
+                            unconverted_type: result.type,
+                            stdout: self.stdout.join('\n'),
+                            stderr: self.stderr.join('\n')
+                        })
+                        return;
                     }
                 }
                 namespace.set('_',result);
