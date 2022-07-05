@@ -36,6 +36,10 @@ self.get_namespace = async function(id) {
     return self.namespaces[id];
 }
 
+class ConversionError extends Error {
+    name = 'ConversionError'
+}
+
 self.onmessage = async (event) => {
     await init();
 
@@ -59,6 +63,15 @@ self.onmessage = async (event) => {
                 if(result !== undefined && result.type == 'numpy.bool_') {
                     result = (result+'') == 'True';
                 }
+                if(pyodide.isPyProxy(result)) {
+                    try {
+                        result = result.toJs({
+                            create_pyproxies: false
+                        });
+                    } catch(e) {
+                        throw(new ConversionError(`Can't convert from type ${result.type}`, {cause: e}))
+                    }
+                }
                 namespace.set('_',result);
                 self.postMessage({
                     result,
@@ -69,6 +82,7 @@ self.onmessage = async (event) => {
             } catch (error) {
                 self.postMessage({
                     error: error.message,
+                    error_name: error.name,
                     job_id,
                     stdout: self.stdout.join('\n'),
                     stderr: self.stderr.concat([error.message]).filter(x=>x!='').join('\n')
