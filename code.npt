@@ -10,10 +10,10 @@
     "help_url": "",
     "input_widget": "code-editor",
     "input_options": {
-        "correctAnswer": "settings['correct_answer']",
+        "correctAnswer": "render(settings['correct_answer'])",
         "hint": {
-            "static": true,
-            "value": ""
+            "static": false,
+            "value": "\"Write \"+capitalise(language_synonym(settings[\"code_language\"]))+\" code\""
         },
         "language": {
             "static": false,
@@ -30,12 +30,12 @@
     },
     "can_be_gap": true,
     "can_be_step": true,
-    "marking_script": "mark:\napply(main_error);\napply(validation_test_feedback);\napply(marking_test_feedback)\n\ninterpreted_answer:\nstudentAnswer\n\nmain_result:\ncode_result[2]\n\nmarking_results:\ncode_result[4..(len(settings[\"tests\"])+4)]\n\nvalidation_results:\ncode_result[(len(settings[\"tests\"])+4)..len(code_result)]\n\nmain_error:\nassert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nif(main_result[\"success\"],\n  positive_feedback(\"Your code runs without errors.\")\n,\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)\n\nmarking_test_feedback:\nmap(\n  let([name,weight,code], test,\n    feedback(\"\"\"<strong>Test: {name}</strong>\"\"\");\n    if(r[\"success\"],\n      if(r[\"result\"],\n        add_credit(weight/total_weight,\"This test was passed.\")\n      ,\n        negative_feedback(\"This test was not passed.\")\n      )\n    ,\n      negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)\n\nvalidation_test_feedback:\nmap(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)\n\ntotal_weight:\nsum(map(weight,[name,weight,code],settings[\"tests\"]))\n\npre_submit:\n[run_code(code_language,\n  [\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"])\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]\n\ncode_result:\npre_submit[\"code_result\"]\n\nmain_stdout:\ntrim(main_result[\"stdout\"] + \"\\n\" + code_result[3][\"stdout\"])\n\ncode_language:\nsettings[\"code_language\"]",
+    "marking_script": "mark:\napply(main_error);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)\n\ninterpreted_answer:\nstudentAnswer\n\nmain_result:\ncode_result[2]\n\nmarking_results:\ncode_result[4..(len(settings[\"tests\"])+4)]\n\nvalidation_results:\ncode_result[(len(settings[\"tests\"])+4)..len(code_result)]\n\nmain_error:\nassert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nassert(main_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)\n\nmarking_test_feedback:\nmap(\n  let([name,weight,code], test,\n    if(r[\"success\"],\n      let(\n        header, \"<strong>Test: {name}</strong> \",\n        result, r[\"result\"],\n        max_credit, weight/total_weight,\n        credit, if(result isa \"number\", result, award(1,result)),\n        switch(\n          credit=0, negative_feedback(header+\"was not passed.\"),\n          credit=1, add_credit(max_credit, header+\"was passed.\"),\n                    add_credit(credit*max_credit, header+\"was partially passed.\")\n        )\n      )\n    ,\n      negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)\n\nvalidation_test_feedback:\nmap(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)\n\ntotal_weight:\nsum(map(weight,[name,weight,code],settings[\"tests\"]))\n\npre_submit:\n[run_code(code_language,\n  [\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"])\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]\n\ncode_result:\npre_submit[\"code_result\"]\n\nmain_stdout:\ntrim(main_result[\"stdout\"])\n\ncode_language:\nsettings[\"code_language\"]\n\npostamble_feedback:\nassert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n)\n\npostamble_result:\ncode_result[3]",
     "marking_notes": [
         {
             "name": "mark",
             "description": "This is the main marking note. It should award credit and provide feedback based on the student's answer.",
-            "definition": "apply(main_error);\napply(validation_test_feedback);\napply(marking_test_feedback)"
+            "definition": "apply(main_error);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)"
         },
         {
             "name": "interpreted_answer",
@@ -60,12 +60,12 @@
         {
             "name": "main_error",
             "description": "<p>Show STDOUT if allowed.</p>\n<p>Check the student's code runs on its own. Fail if there was an error, and show STDERR if allowed.</p>",
-            "definition": "assert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nif(main_result[\"success\"],\n  positive_feedback(\"Your code runs without errors.\")\n,\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)"
+            "definition": "assert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nassert(main_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)"
         },
         {
             "name": "marking_test_feedback",
             "description": "<p>Feedback on the marking tests. For each test, if the test was passed then add the corresponding amount of credit. If there was an error, show the error.</p>",
-            "definition": "map(\n  let([name,weight,code], test,\n    feedback(\"\"\"<strong>Test: {name}</strong>\"\"\");\n    if(r[\"success\"],\n      if(r[\"result\"],\n        add_credit(weight/total_weight,\"This test was passed.\")\n      ,\n        negative_feedback(\"This test was not passed.\")\n      )\n    ,\n      negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)"
+            "definition": "map(\n  let([name,weight,code], test,\n    if(r[\"success\"],\n      let(\n        header, \"<strong>Test: {name}</strong> \",\n        result, r[\"result\"],\n        max_credit, weight/total_weight,\n        credit, if(result isa \"number\", result, award(1,result)),\n        switch(\n          credit=0, negative_feedback(header+\"was not passed.\"),\n          credit=1, add_credit(max_credit, header+\"was passed.\"),\n                    add_credit(credit*max_credit, header+\"was partially passed.\")\n        )\n      )\n    ,\n      negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)"
         },
         {
             "name": "validation_test_feedback",
@@ -90,15 +90,33 @@
         {
             "name": "main_stdout",
             "description": "",
-            "definition": "trim(main_result[\"stdout\"] + \"\\n\" + code_result[3][\"stdout\"])"
+            "definition": "trim(main_result[\"stdout\"])"
         },
         {
             "name": "code_language",
             "description": "",
             "definition": "settings[\"code_language\"]"
+        },
+        {
+            "name": "postamble_feedback",
+            "description": "",
+            "definition": "assert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n)"
+        },
+        {
+            "name": "postamble_result",
+            "description": "",
+            "definition": "code_result[3]"
         }
     ],
     "settings": [
+        {
+            "name": "show_input_hint",
+            "label": "Show the input hint?",
+            "help_url": "",
+            "hint": "",
+            "input_type": "checkbox",
+            "default_value": true
+        },
         {
             "name": "code_language",
             "label": "Code language",
