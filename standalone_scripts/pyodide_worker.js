@@ -1,4 +1,4 @@
-importScripts("https://cdn.jsdelivr.net/pyodide/v0.20.0/full/pyodide.js");
+importScripts("https://cdn.jsdelivr.net/pyodide/v0.19.0/full/pyodide.js");
 
 self.stdout = [];
 self.stderr = [];
