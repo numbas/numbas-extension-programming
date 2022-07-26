@@ -30,12 +30,12 @@
     },
     "can_be_gap": true,
     "can_be_step": true,
-    "marking_script": "mark:\napply(main_error);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)\n\ninterpreted_answer:\nstudentAnswer\n\nmain_result:\ncode_result[2]\n\nmarking_results:\ncode_result[4..(len(settings[\"tests\"])+4)]\n\nvalidation_results:\ncode_result[(len(settings[\"tests\"])+4)..len(code_result)]\n\nmain_error:\nassert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nassert(main_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)\n\nmarking_test_feedback:\nmap(\n  let([name,weight,code], test,\n    if(r[\"success\"],\n      let(\n        header, \"<strong>Test: {name}</strong> \",\n        result, r[\"result\"],\n        max_credit, weight/total_weight,\n        credit, if(result isa \"number\", result, award(1,result)),\n        switch(\n          credit=0, negative_feedback(header+\"was not passed.\"),\n          credit=1, add_credit(max_credit, header+\"was passed.\"),\n                    add_credit(credit*max_credit, header+\"was partially passed.\")\n        )\n      )\n    ,\n      negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)\n\nvalidation_test_feedback:\nmap(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)\n\ntotal_weight:\nsum(map(weight,[name,weight,code],settings[\"tests\"]))\n\npre_submit:\n[run_code(code_language,\n  [\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"])\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]\n\ncode_result:\npre_submit[\"code_result\"]\n\nmain_stdout:\ntrim(main_result[\"stdout\"])\n\ncode_language:\nsettings[\"code_language\"]\n\npostamble_feedback:\nassert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n)\n\npostamble_result:\ncode_result[3]",
+    "marking_script": "mark:\napply(main_error);\napply(matplotlib_feedback);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)\n\ninterpreted_answer:\nstudentAnswer\n\nmain_result:\ncode_result[2]\n\nmarking_results:\ncode_result[5..(len(settings[\"tests\"])+5)]\n\nvalidation_results:\ncode_result[(len(settings[\"tests\"])+5)..len(code_result)]\n\nmain_error:\nassert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nassert(main_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)\n\nmarking_test_feedback:\nmap(\n  let([name,weight,code], test,\n    if(r[\"success\"],\n      let(\n        header, \"<strong>Test: {name}</strong> \",\n        result, r[\"result\"],\n        max_credit, weight/total_weight,\n        credit, if(result isa \"number\", result, award(1,result)),\n        switch(\n          credit=0, negative_feedback(header+\"was not passed.\"),\n          credit=1, add_credit(max_credit, header+\"was passed.\"),\n                    add_credit(credit*max_credit, header+\"was partially passed.\")\n        )\n      )\n    ,\n      negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)\n\nvalidation_test_feedback:\nmap(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)\n\ntotal_weight:\nsum(map(weight,[name,weight,code],settings[\"tests\"]))\n\npre_submit:\n[run_code(code_language,\n  [\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"]),\n    matplotlib_postamble\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]\n\ncode_result:\npre_submit[\"code_result\"]\n\nmain_stdout:\nsafe(trim(main_result[\"stdout\"]))\n\ncode_language:\nsettings[\"code_language\"]\n\npostamble_feedback:\nassert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n)\n\npostamble_result:\ncode_result[3]\n\nmatplotlib_postamble:\nsafe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   fig = plt.gcf()\n   if fig.get_axes():\n      fig.savefig(sys.stdout, format='svg')\n\"\"\")\n\nmatplotlib_feedback:\nassert(matplotlib_result[\"stdout\"]=\"\",\n  feedback(matplotlib_result[\"stdout\"])\n)\n\nmatplotlib_result:\ncode_result[4]",
     "marking_notes": [
         {
             "name": "mark",
             "description": "This is the main marking note. It should award credit and provide feedback based on the student's answer.",
-            "definition": "apply(main_error);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)"
+            "definition": "apply(main_error);\napply(matplotlib_feedback);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)"
         },
         {
             "name": "interpreted_answer",
@@ -49,13 +49,13 @@
         },
         {
             "name": "marking_results",
-            "description": "<p>The results of running the marking tests.</p>\n<p>A list of dictionaries, each containing keys:</p>\n<ul>\n<li>name - the name of the test</li>\n<li>credit - the proportion of the available credit to award if this test is passed.</li>\n<li>code - the code of the test</li>\n<li>result - the result of running the test.</li>\n</ul>",
-            "definition": "code_result[4..(len(settings[\"tests\"])+4)]"
+            "description": "<p>The results of running the marking tests.</p>",
+            "definition": "code_result[5..(len(settings[\"tests\"])+5)]"
         },
         {
             "name": "validation_results",
-            "description": "<p>The results of running the validation tests. A list of dictionaries, each containing keys:</p>\n<ul>\n<li>name - the name of the test</li>\n<li>code - the code of the test</li>\n<li>result - the result of running the test.</li>\n</ul>",
-            "definition": "code_result[(len(settings[\"tests\"])+4)..len(code_result)]"
+            "description": "<p>The results of running the validation tests.</p>",
+            "definition": "code_result[(len(settings[\"tests\"])+5)..len(code_result)]"
         },
         {
             "name": "main_error",
@@ -80,32 +80,47 @@
         {
             "name": "pre_submit",
             "description": "",
-            "definition": "[run_code(code_language,\n  [\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"])\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]"
+            "definition": "[run_code(code_language,\n  [\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"]),\n    matplotlib_postamble\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]"
         },
         {
             "name": "code_result",
-            "description": "",
+            "description": "<p>The results of the code blocks: a list with an entry corresponding to each block of code.</p>",
             "definition": "pre_submit[\"code_result\"]"
         },
         {
             "name": "main_stdout",
-            "description": "",
-            "definition": "trim(main_result[\"stdout\"])"
+            "description": "<p>The stdout from the student's code.</p>",
+            "definition": "safe(trim(main_result[\"stdout\"]))"
         },
         {
             "name": "code_language",
-            "description": "",
+            "description": "<p>The language the code is written in. Either \"pyodide\" (Python) or \"webr\" (R)</p>",
             "definition": "settings[\"code_language\"]"
         },
         {
             "name": "postamble_feedback",
-            "description": "",
+            "description": "<p>Show the STDOUT from the postamble, if there is any.</p>",
             "definition": "assert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n)"
         },
         {
             "name": "postamble_result",
-            "description": "",
+            "description": "<p>The result of running the postamble.</p>",
             "definition": "code_result[3]"
+        },
+        {
+            "name": "matplotlib_postamble",
+            "description": "<p>A hack to show any figures produced with matplotlib in the stdout.</p>",
+            "definition": "safe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   fig = plt.gcf()\n   if fig.get_axes():\n      fig.savefig(sys.stdout, format='svg')\n\"\"\")"
+        },
+        {
+            "name": "matplotlib_feedback",
+            "description": "<p>Feedback from the matplotlib hack.</p>",
+            "definition": "assert(matplotlib_result[\"stdout\"]=\"\",\n  feedback(matplotlib_result[\"stdout\"])\n)"
+        },
+        {
+            "name": "matplotlib_result",
+            "description": "<p>The result of running the matplotlib hack.</p>",
+            "definition": "code_result[4]"
         }
     ],
     "settings": [

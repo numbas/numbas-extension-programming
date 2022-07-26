@@ -15,6 +15,7 @@ async function init() {
             stdout: s => self.stdout.push(s),
             stderr: s => self.stderr.push(s)
         });
+        self.pyodide.runPython("import os; os.environ['MPLBACKEND'] = 'AGG'");
         resolve(self.pyodide);
     });
     return self.pyodidePromise;
