@@ -273,9 +273,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     /** An object which can run code in a certain language.
      */
     class CodeRunner {
-        queue = Promise.resolve();
 
         constructor() {
+            this.queue = Promise.resolve();
             this.job_id_acc = 0;
             this.jobs = {};
 
