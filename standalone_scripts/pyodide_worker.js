@@ -1,4 +1,4 @@
-importScripts("https://cdn.jsdelivr.net/pyodide/v0.19.0/full/pyodide.js");
+importScripts("https://cdn.jsdelivr.net/pyodide/v0.21.0/full/pyodide.js");
 
 self.stdout = [];
 self.stderr = [];
@@ -11,7 +11,7 @@ async function init() {
     }
     self.pyodidePromise = new Promise(async (resolve,reject) => {
         self.pyodide = await loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.19.0/full/",
+            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.21.0/full/",
             stdout: s => self.stdout.push(s),
             stderr: s => self.stderr.push(s)
         });
@@ -50,7 +50,7 @@ self.onmessage = async (event) => {
 
             try {
                 await self.pyodide.loadPackagesFromImports(code);
-                let result = await self.pyodide.runPythonAsync(code, namespace);
+                let result = await self.pyodide.runPythonAsync(code, {globals: namespace});
                 if(result !== undefined && result.type == 'numpy.bool_') {
                     result = (result+'') == 'True';
                 }
