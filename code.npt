@@ -10,7 +10,7 @@
     "help_url": "",
     "input_widget": "code-editor",
     "input_options": {
-        "correctAnswer": "render(settings['correct_answer'])",
+        "correctAnswer": "if(settings[\"correct_answer_subvars\"],\n  render(settings[\"correct_answer\"])\n,\n  settings[\"correct_answer\"]\n)",
         "hint": {
             "static": false,
             "value": "\"Write \"+capitalise(language_synonym(settings[\"code_language\"]))+\" code\""
@@ -21,7 +21,7 @@
         },
         "placeholder": {
             "static": false,
-            "value": "render(settings[\"placeholder\"])"
+            "value": "if(settings[\"correct_answer_subvars\"],\n  render(settings[\"placeholder\"])\n,\n  settings[\"placeholder\"]\n)"
         },
         "theme": {
             "static": true,
