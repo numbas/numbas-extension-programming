@@ -307,6 +307,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         }
 
         /** Create a session using this runner.
+         *
          * @returns {Numbas.extensions.programming.CodeSession}
          */
         new_session() {
@@ -359,10 +360,10 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
         /** Run some code in this runner, in the given namespace.
          * @param {string} code - The code to run.
-         * @param {namespace_id} namespace_id - The ID of the namespace to run the code in.
+         * @param {CodeSession} session - The session to run the code in.
          * @returns {Numbas.extensions.programming.job}
          */
-        run_code(code, namespace_id) {
+        run_code(code, session) {
             throw(new Error("run_code should be implemented."));
         }
 
@@ -417,7 +418,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
         async run_code(code) {
             try {
-                const job = await this.runner.run_code(code, this.namespace_id);
+                const job = await this.runner.run_code(code, this);
                 const result = await job.promise;
                 return Object.assign({success: true}, result);
             } catch(err) {
@@ -461,12 +462,12 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                 }
             }
         }
-        run_code(code, namespace_id) {
+        run_code(code, session) {
             const job = this.new_job();
             this.worker.postMessage({
                 command: 'runPython',
                 job_id: job.id,
-                namespace_id: namespace_id,
+                namespace_id: session.namespace_id,
                 code: code
             });
             return job;
@@ -555,9 +556,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             return this.buffers.stderr.join('\n');
         }
 
-        run_code(code, namespace_id) {
-            if(namespace_id !== undefined) {
-                code = `with(${this.namespace_name(namespace_id)}, {\n${code}\n})`;
+        run_code(code, session) {
+            if(session !== undefined) {
+                code = `with(${this.namespace_name(session.namespace_id)}, {\n${code}\n})`;
             }
 
             return this.enqueue(async () => {
@@ -587,6 +588,33 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                 return job;
             });
         }
+
+        /** Run several blocks of code in the same session.
+         *  Empty blocks of code won't run, but will return result `undefined` and success `true`.
+         *
+         * @param {Array.<string>} codes - Blocks of code to run.
+         * @returns {Promise.<Array.<Numbas.extensions.programming.run_result>>}
+         */
+        async run_code_blocks(codes) {
+            const session = this.new_session();
+            var results = [];
+            return Promise.all(codes.map(async (code) => {
+                if(code.trim()=='') {
+                    return {
+                        result: undefined,
+                        success: true,
+                        stdout: '',
+                        stderr: ''
+                    }
+                }
+                try {
+                    const result = await session.run_code(code);
+                    return result;
+                } catch(error) {
+                    return error;
+                }
+            }));
+        }
     }
     programming.WebRRunner = WebRRunner;
 
@@ -613,7 +641,11 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         try {
             return await language_runners[language].run_code_blocks(codes);
         } catch(error_results) {
-            return error_results;
+            return codes.map(() => { 
+                return {
+                    error: error_results.message,
+                }
+            });
         }
     }
 
