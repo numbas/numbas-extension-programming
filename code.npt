@@ -30,7 +30,7 @@
     },
     "can_be_gap": true,
     "can_be_step": true,
-    "marking_script": "mark:\napply(main_error);\napply(matplotlib_feedback);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)\n\ninterpreted_answer:\nstudentAnswer\n\nmain_result:\ncode_result[3]\n\nmarking_results:\ncode_result[6..(len(settings[\"tests\"])+6)]\n\nvalidation_results:\ncode_result[(len(settings[\"tests\"])+6)..len(code_result)]\n\nmain_error:\nassert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nassert(main_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)\n\nmarking_test_feedback:\nmap(\n  let(\n    [name,weight,code], test,\n    header, \"<strong>Test: {name}</strong> \",\n    if(r[\"success\"],\n      let(\n        result, r[\"result\"],\n        max_credit, weight/total_weight,\n        credit, if(result isa \"number\", result, award(1,result)),\n        switch(\n          credit=0, negative_feedback(header+\"was not passed.\"),\n          credit=1, add_credit(max_credit, header+\"was passed.\"),\n                    add_credit(credit*max_credit, header+\"was partially passed.\")\n        )\n      )\n    ,\n      if(settings[\"show_marking_errors\"],\n        negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n      ,\n        negative_feedback(header+\"was not passed.\")\n      )\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)\n\nvalidation_test_feedback:\nmap(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)\n\ntotal_weight:\nsum(map(weight,[name,weight,code],settings[\"tests\"]))\n\npre_submit:\n[run_code(code_language,\n  [\n    matplotlib_preamble,\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"]),\n    matplotlib_postamble\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]\n\ncode_result:\npre_submit[\"code_result\"]\n\nmain_stdout:\nsafe(trim(main_result[\"stdout\"]))\n\ncode_language:\nsettings[\"code_language\"]\n\npostamble_feedback:\nassert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n)\n\npostamble_result:\ncode_result[4]\n\nmatplotlib_preamble:\nsafe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   plt.clf()   \n\"\"\")\n\nmatplotlib_postamble:\nsafe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   fig = plt.gcf()\n   if fig.get_axes():\n      fig.savefig(sys.stdout, format='svg')\n\"\"\")\n\nmatplotlib_result:\ncode_result[5]\n\nmatplotlib_feedback:\nassert(matplotlib_result[\"stdout\"]=\"\",\n  feedback(matplotlib_result[\"stdout\"])\n)",
+    "marking_script": "mark:\napply(main_error);\napply(matplotlib_feedback);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)\n\ninterpreted_answer:\nstudentAnswer\n\nmain_result:\ncode_result[3]\n\nmarking_results:\ncode_result[6..(len(settings[\"tests\"])+6)]\n\nvalidation_results:\ncode_result[(len(settings[\"tests\"])+6)..len(code_result)]\n\nmain_error:\nassert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nassert(main_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)\n\nmarking_test_feedback:\nmap(\n  let(\n    [name,weight,code], test,\n    header, \"<strong>Test: {name}</strong> \",\n    if(r[\"success\"],\n      let(\n        result, r[\"result\"],\n        max_credit, weight/total_weight,\n        credit, if(result isa \"number\", result, award(1,result)),\n        switch(\n          credit=0, negative_feedback(header+\"was not passed.\"),\n          credit=1, add_credit(max_credit, header+\"was passed.\"),\n                    add_credit(credit*max_credit, header+\"was partially passed.\")\n        )\n      )\n    ,\n      if(settings[\"show_marking_errors\"],\n        negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n      ,\n        negative_feedback(header+\"was not passed.\")\n      )\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)\n\nvalidation_test_feedback:\nmap(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)\n\ntotal_weight:\nsum(map(weight,[name,weight,code],settings[\"tests\"]))\n\npre_submit:\n[run_code(code_language,\n  [\n    matplotlib_preamble,\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"]),\n    matplotlib_postamble\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]\n\ncode_result:\npre_submit[\"code_result\"]\n\nmain_stdout:\nsafe(trim(main_result[\"stdout\"]))\n\ncode_language:\nsettings[\"code_language\"]\n\npreamble_result:\ncode_result[2]\n\npreamble_stderr:\npreamble_result[\"stderr\"]\n\npostamble_result:\ncode_result[4]\n\npostamble_stderr:\npostamble_result[\"stderr\"]\n\npostamble_feedback:\nassert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n);\nassert(postamble_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in the marking routine postamble: <pre>{postamble_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in the marking routine postamble.\")\n  )\n)\n\nmatplotlib_preamble:\nif(code_language=\"pyodide\",\n  safe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   plt.clf()   \n\"\"\"),\n  \"\"\n)\n\nmatplotlib_postamble:\nif(code_language=\"pyodide\",\n  safe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   fig = plt.gcf()\n   if fig.get_axes():\n      fig.savefig(sys.stdout, format='svg')\n\"\"\"),\n  \"\"\n)\n\nmatplotlib_result:\ncode_result[5]\n\nmatplotlib_feedback:\nassert(matplotlib_result[\"stdout\"]=\"\",\n  feedback(matplotlib_result[\"stdout\"])\n)",
     "marking_notes": [
         {
             "name": "mark",
@@ -79,7 +79,7 @@
         },
         {
             "name": "pre_submit",
-            "description": "",
+            "description": "<p>The code blocks to run.</p>\n<p>In order, they are:</p>\n<ul>\n<li>0 - The matplotlib hack preamble (in Python, make sure matplotlib plots are displayed)</li>\n<li>1 - Set passed-in variables</li>\n<li>2 - Preamble</li>\n<li>3 - The student's code</li>\n<li>4 - Postamble</li>\n<li>5 - The matplotlib hack postamble</li>\n<li>Marking tests</li>\n<li>Validation tests</li>\n</ul>",
             "definition": "[run_code(code_language,\n  [\n    matplotlib_preamble,\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"]),\n    matplotlib_postamble\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]"
         },
         {
@@ -98,9 +98,14 @@
             "definition": "settings[\"code_language\"]"
         },
         {
-            "name": "postamble_feedback",
-            "description": "<p>Show the STDOUT from the postamble, if there is any.</p>",
-            "definition": "assert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n)"
+            "name": "preamble_result",
+            "description": "<p>The result of running the preamble block.</p>",
+            "definition": "code_result[2]"
+        },
+        {
+            "name": "preamble_stderr",
+            "description": "<p>The STDERR produced by the preamble block.</p>",
+            "definition": "preamble_result[\"stderr\"]"
         },
         {
             "name": "postamble_result",
@@ -108,9 +113,19 @@
             "definition": "code_result[4]"
         },
         {
+            "name": "postamble_stderr",
+            "description": "<p>The STDERR produced by the postamble block.</p>",
+            "definition": "postamble_result[\"stderr\"]"
+        },
+        {
+            "name": "postamble_feedback",
+            "description": "<p>Show the STDOUT from the postamble, if there is any.</p>",
+            "definition": "assert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n);\nassert(postamble_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in the marking routine postamble: <pre>{postamble_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in the marking routine postamble.\")\n  )\n)"
+        },
+        {
             "name": "matplotlib_preamble",
-            "description": "",
-            "definition": "safe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   plt.clf()   \n\"\"\")"
+            "description": "<p>Preamble for a hack to ensure that figures produced by matplotlib in Python are displayed.</p>\n<p>This code clears the matplotlib output, if matplotlib has been loaded.</p>",
+            "definition": "if(code_language=\"pyodide\",\n  safe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   plt.clf()   \n\"\"\"),\n  \"\"\n)"
         },
         {
             "name": "matplotlib_postamble",
@@ -124,7 +139,7 @@
         },
         {
             "name": "matplotlib_feedback",
-            "description": "<p>Feedback from the matplotlib hack.</p>",
+            "description": "<p>Feedback from the matplotlib hack: if a figure is produced, it's displayed as SVG here.</p>",
             "definition": "assert(matplotlib_result[\"stdout\"]=\"\",\n  feedback(matplotlib_result[\"stdout\"])\n)"
         }
     ],
