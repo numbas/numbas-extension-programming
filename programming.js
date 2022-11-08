@@ -5,6 +5,10 @@
  */
 Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programming) {
 
+    const remove_ansi_escapes = programming.remove_ansi_escapes = function(str) {
+        return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g,'');
+    }
+
 /////////////////////////// PREAMBLE
 
     programming.webR_url = 'https://cdn.jsdelivr.net/gh/georgestagg/webR@452ae1637dfdd65c9a5f462fff439022d833f8f9/dist/';
@@ -545,19 +549,20 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
          * @returns {string}
          */
         last_stdout_line() {
-            return this.buffers.stdout.length == 0 ? '' : this.buffers.stdout[this.buffers.stdout.length-1];
+            return remove_ansi_escapes(this.buffers.stdout.length == 0 ? '' : this.buffers.stdout[this.buffers.stdout.length-1]);
         }
 
         get stdout() {
-            return this.buffers.stdout.join('\n');
+            return remove_ansi_escapes(this.buffers.stdout.join('\n'));
         }
 
         get stderr() {
-            return this.buffers.stderr.join('\n');
+            return remove_ansi_escapes(this.buffers.stderr.join('\n'));
         }
 
         run_code(code, session) {
             if(session !== undefined) {
+                code = code.replace(/\r/g,'');
                 code = `with(${this.namespace_name(session.namespace_id)}, {\n${code}\n})`;
             }
 
