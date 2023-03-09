@@ -10,9 +10,6 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     }
 
 /////////////////////////// PREAMBLE
-
-    programming.webR_url = 'https://cdn.jsdelivr.net/gh/georgestagg/webR@452ae1637dfdd65c9a5f462fff439022d833f8f9/dist/';
-
     var jme = Numbas.jme;
     var types = jme.types;
     var funcObj = jme.funcObj;
@@ -30,6 +27,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     const load_script = programming.load_script = function(url) {
         var script = document.createElement('script');
         script.setAttribute('src', url);
+        script.setAttribute('type', 'module');
         document.head.appendChild(script);
         return script;
     }
@@ -495,61 +493,36 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     class WebRRunner extends CodeRunner {
         constructor() {
             super();
-        }
+            var worker = this.worker = new Worker(Numbas.getStandaloneFileURL('programming', 'webr_worker.js'));
 
-        new_session() {
-            const session = super.new_session();
-            this.run_code(`${this.namespace_name(session.namespace_id)} <- new.env()`);
-            return session;
-        }
-
-        namespace_name(namespace_id) {
-            return `webr_namespace${namespace_id}`;
-        }
-
-        /** Clear the STDOUT and STDERR buffers.
-         */
-        clear_buffers() {
-            this.buffers = {
-                stdout: [],
-                stderr: []
-            };
-        }
-
-        /** Start loading webR.
-         * @returns {Promise} - Resolves to the `webR` object once it has loaded.
-         */
-        load_webR() {
-            if(!this.webRPromise) {
-                load_script(programming.webR_url + 'webR.js');
-
-                this.webRPromise = new Promise((resolve, reject) => {
-                    var checkInterval = setInterval(async () => {
-                        if(window.loadWebR) {
-                            clearInterval(checkInterval);
-                            const webR = await loadWebR({
-                                WEBR_URL: programming.webR_url,
-                                loadPackages: [],
-                                stdout: (s) => { 
-                                    this.buffers.stdout.push(s); 
-                                }, 
-                                stderr: (s) => { 
-                                    this.buffers.stderr.push(s); 
-                                }
-                            });
-                            resolve(webR);
-                        }
-                    }, 50);
-                });
+            worker.onmessage = (event) => {
+                const job_id = event.data.job_id;
+                const job = this.get_job(job_id);
+                if(event.data.error) {
+                    if(event.data.error_name == 'ConversionError') {
+                        job.resolve({
+                            result: null,
+                            job_id,
+                            stdout: event.data.stdout,
+                            stderr: event.data.stderr
+                        });
+                    }
+                    job.reject(event.data);
+                } else {
+                    job.resolve(event.data);
+                }
             }
-            return this.webRPromise;
         }
 
-        /** Get the contents of the last line of STDOUT, or '' if STDOUT is empty.
-         * @returns {string}
-         */
-        last_stdout_line() {
-            return remove_ansi_escapes(this.buffers.stdout.length == 0 ? '' : this.buffers.stdout[this.buffers.stdout.length-1]);
+        run_code(code, session) {
+            const job = this.new_job();
+            this.worker.postMessage({
+                command: 'runR',
+                job_id: job.id,
+                namespace_id: session.namespace_id,
+                code: code
+            });
+            return job;
         }
 
         get stdout() {
@@ -558,67 +531,6 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
         get stderr() {
             return remove_ansi_escapes(this.buffers.stderr.join('\n'));
-        }
-
-        run_code(code, session) {
-            if(session !== undefined) {
-                code = code.replace(/\r/g,'');
-                code = `with(${this.namespace_name(session.namespace_id)}, {\n${code}\n})`;
-            }
-
-            return this.enqueue(async () => {
-                const job = this.new_job();
-
-                const webR = await this.load_webR();
-                try {
-                    this.clear_buffers();
-                    const result = await webR.runRAsync(code);
-                    if(result===-1) {
-                        throw(new Error("Error running R code"));
-                    } else {
-                        job.resolve({
-                            result: this.last_stdout_line() === "[1] TRUE",
-                            stdout: this.stdout,
-                            stderr: this.stderr,
-                        });
-                    }
-                } catch(err) {
-                    this.buffers.stderr.push(err);
-                    job.reject({
-                        error: err.message,
-                        stdout: this.stdout,
-                        stderr: this.stderr
-                    });
-                };
-                return job;
-            });
-        }
-
-        /** Run several blocks of code in the same session.
-         *  Empty blocks of code won't run, but will return result `undefined` and success `true`.
-         *
-         * @param {Array.<string>} codes - Blocks of code to run.
-         * @returns {Promise.<Array.<Numbas.extensions.programming.run_result>>}
-         */
-        async run_code_blocks(codes) {
-            const session = this.new_session();
-            var results = [];
-            return Promise.all(codes.map(async (code) => {
-                if(code.trim()=='') {
-                    return {
-                        result: undefined,
-                        success: true,
-                        stdout: '',
-                        stderr: ''
-                    }
-                }
-                try {
-                    const result = await session.run_code(code);
-                    return result;
-                } catch(error) {
-                    return error;
-                }
-            }));
         }
     }
     programming.WebRRunner = WebRRunner;
