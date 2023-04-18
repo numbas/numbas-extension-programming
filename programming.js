@@ -496,20 +496,25 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             var worker = this.worker = new Worker(Numbas.getStandaloneFileURL('programming', 'webr_worker.js'));
 
             worker.onmessage = (event) => {
-                const job_id = event.data.job_id;
-                const job = this.get_job(job_id);
-                if(event.data.error) {
-                    if(event.data.error_name == 'ConversionError') {
-                        job.resolve({
-                            result: null,
-                            job_id,
-                            stdout: event.data.stdout,
-                            stderr: event.data.stderr
-                        });
+                if ('job_id' in event.data) {
+                    const job_id = event.data.job_id;
+                    const job = this.get_job(job_id);
+                    if(event.data.error) {
+                        if(event.data.error_name == 'ConversionError') {
+                            job.resolve({
+                                result: null,
+                                job_id,
+                                stdout: event.data.stdout,
+                                stderr: event.data.stderr
+                            });
+                        }
+                        job.reject(event.data);
+                    } else {
+                        job.resolve(event.data);
                     }
-                    job.reject(event.data);
                 } else {
-                    job.resolve(event.data);
+                    // TODO: Handle other webR messages
+                    console.log(event.data);
                 }
             }
         }
