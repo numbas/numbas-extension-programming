@@ -109,6 +109,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     editor.on(x, ce.events[x]);
                 }
             }
+            element.addEventListener('keyup', function(e) {
+                e.stopPropagation();
+            });
             element.addEventListener('keypress', function(e) {
                 e.stopPropagation();
             });
