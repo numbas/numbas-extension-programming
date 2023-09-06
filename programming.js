@@ -140,7 +140,11 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             }
             var ce = this;
             ce.value_set = true;
+            ce.most_recent_answer = answerJSON;
             const editor = await this.editorPromise;
+            if(answerJSON !== ce.most_recent_answer) {
+                return;
+            }
             ce.setting_value = true;
             var code = answerJSON.value;
             if(code === undefined) {
