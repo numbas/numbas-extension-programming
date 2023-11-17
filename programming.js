@@ -11,8 +11,6 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
 /////////////////////////// PREAMBLE
 
-    programming.webR_url = 'https://cdn.jsdelivr.net/gh/georgestagg/webR@452ae1637dfdd65c9a5f462fff439022d833f8f9/dist/';
-
     var jme = Numbas.jme;
     var types = jme.types;
     var funcObj = jme.funcObj;
@@ -29,7 +27,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
      */
     const load_script = programming.load_script = function(url) {
         var script = document.createElement('script');
-        script.setAttribute('src', url);
+        script.src = url;
+        script.type = 'module';
         document.head.appendChild(script);
         return script;
     }
@@ -504,23 +503,15 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             super();
         }
 
-        new_session() {
-            const session = super.new_session();
-            this.run_code(`${this.namespace_name(session.namespace_id)} <- new.env()`);
+        async new_session() {
+            const session = await super.new_session();
+
+            const webR = await this.load_webR();
+
+            session.shelter = await new webR.Shelter();
+            session.env = await new webR.REnvironment();
+
             return session;
-        }
-
-        namespace_name(namespace_id) {
-            return `webr_namespace${namespace_id}`;
-        }
-
-        /** Clear the STDOUT and STDERR buffers.
-         */
-        clear_buffers() {
-            this.buffers = {
-                stdout: [],
-                stderr: []
-            };
         }
 
         /** Start loading webR.
@@ -528,22 +519,15 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
          */
         load_webR() {
             if(!this.webRPromise) {
-                load_script(programming.webR_url + 'webR.js');
+                load_script(Numbas.getStandaloneFileURL('programming', 'webr.js'));
 
                 this.webRPromise = new Promise((resolve, reject) => {
                     var checkInterval = setInterval(async () => {
-                        if(window.loadWebR) {
+                        if(window.WebR) {
+                            window.parent.WebR = WebR;
                             clearInterval(checkInterval);
-                            const webR = await loadWebR({
-                                WEBR_URL: programming.webR_url,
-                                loadPackages: [],
-                                stdout: (s) => { 
-                                    this.buffers.stdout.push(s); 
-                                }, 
-                                stderr: (s) => { 
-                                    this.buffers.stderr.push(s); 
-                                }
-                            });
+                            const webR = new WebR.WebR();
+                            await webR.init();
                             resolve(webR);
                         }
                     }, 50);
@@ -552,51 +536,97 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             return this.webRPromise;
         }
 
-        /** Get the contents of the last line of STDOUT, or '' if STDOUT is empty.
-         * @returns {string}
-         */
-        last_stdout_line() {
-            return remove_ansi_escapes(this.buffers.stdout.length == 0 ? '' : this.buffers.stdout[this.buffers.stdout.length-1]);
-        }
+        async r_to_js(obj) {
+            switch(await obj.type()) {
+                case "list":
+                    return new types.TList(obj.toArray().map(x => this.r_to_js(x)));
 
-        get stdout() {
-            return remove_ansi_escapes(this.buffers.stdout.join('\n'));
-        }
-
-        get stderr() {
-            return remove_ansi_escapes(this.buffers.stderr.join('\n'));
+                default:
+                    try {
+                        let value = await obj.toArray();
+                        if(value.length == 1) {
+                            value = value[0];
+                        }
+                        return value;
+                    } catch(e) {
+                        return null;
+                    }
+            }
         }
 
         run_code(code, session) {
             if(session !== undefined) {
                 code = code.replace(/\r/g,'');
-                code = `with(${this.namespace_name(session.namespace_id)}, {\n${code}\n})`;
             }
 
             return this.enqueue(async () => {
                 const job = this.new_job();
 
                 const webR = await this.load_webR();
+                const shelter = session ? await session.shelter : webR.globalShelter;
+
+                if(session.last_value !== undefined) {
+                    await session.env.bind('.Last.value', session.last_value);
+                }
+
+                let res;
+
                 try {
-                    this.clear_buffers();
-                    const result = await webR.runRAsync(code);
-                    if(result===-1) {
-                        throw(new Error("Error running R code"));
-                    } else {
-                        job.resolve({
-                            result: this.last_stdout_line() === "[1] TRUE",
-                            stdout: this.stdout,
-                            stderr: this.stderr,
-                        });
+
+                    res = await shelter.captureR(code, { env: session.env });
+
+                } catch(e) {
+
+                    let message = e.message;
+                    const m = message.match(/^<text>:(\d+?):(\d+?): ([\s\S]*)/m);
+                    if(m) {
+                        message = `Error on line ${m[1]} character ${m[2]}:\n${m[3]}`;
                     }
-                } catch(err) {
-                    this.buffers.stderr.push(err);
-                    job.reject({
-                        error: err.message,
-                        stdout: this.stdout,
-                        stderr: this.stderr
-                    });
-                };
+                    res = {
+                        result: null,
+                        output: [{type:'stderr', data: message}]
+                    };
+
+                } finally {
+
+                    const {output, result} = res;
+
+                    session.last_value = result;
+
+                    let js_result = null;
+                    try {
+                        js_result = result ? await this.r_to_js(result) : null;
+                    } catch(e) {
+                    }
+
+                    const stdout = output.filter(({type}) => type=='stdout').map(msg => msg.data).join('\n');
+                    const stderr = output.filter(({type}) => type=='stderr').map(msg => msg.data).join('\n');
+
+                    const images = [];
+                    const homedir = '/home/web_user';
+                    for(let f of Object.values((await webR.FS.lookupPath(homedir)).contents)) {
+                        if(f.name.match(/^Rplot.*\.svg$/) && !f.isFolder) {
+                            const path = `${homedir}/${f.name}`;
+                            const data = await webR.FS.readFile(path);
+                            const blob = new Blob([data], {type: 'image/svg+xml'});
+                            const text = await blob.text();
+                            images.push(text);
+                            await webR.FS.unlink(path);
+                        }
+                    }
+
+                    const out = {
+                        result: js_result,
+                        stdout,
+                        stderr,
+                        images
+                    };
+                    if(stderr.length) {
+                        job.reject(out);
+                    } else {
+                        job.resolve(out);
+                    }
+                }
                 return job;
             });
         }
@@ -608,9 +638,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
          * @returns {Promise.<Array.<Numbas.extensions.programming.run_result>>}
          */
         async run_code_blocks(codes) {
-            const session = this.new_session();
-            var results = [];
-            return Promise.all(codes.map(async (code) => {
+            const session = await this.new_session();
+            const results = await Promise.all(codes.map(async (code) => {
                 if(code.trim()=='') {
                     return {
                         result: undefined,
@@ -626,6 +655,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     return error;
                 }
             }));
+            const shelter = await session.shelter;
+            await shelter.purge();
+            return results;
         }
     }
     programming.WebRRunner = WebRRunner;
