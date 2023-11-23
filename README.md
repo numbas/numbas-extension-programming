@@ -33,6 +33,21 @@ pre_submit:
     ]
 ```
 
+## Pre-loading a language
+
+If the scripts for a language have not already been loaded when you try to run some code, then they are loaded automatically.
+However, this can take a long time, depending on the speed of the student's internet connection.
+
+You can pre-load a language with the function `Numbas.extensions.programming.preload(language, packages)`. The list of packages to load is optional.
+
+For example, if your question will use R with the packages `ggplot2` and `dplyr`, put this line in your question's JavaScript preamble:
+
+```
+Numbas.extensions.programming.preload('webr', ['ggplot2', 'dply']);
+```
+
+The necessary files will start loading as soon as part of the exam loading process, so will usually be ready to use by the time the student submits some code.
+
 ## The code editor input method
 
 The extension provides the [Ace editor](https://ace.c9.io/) as an input method for custom part types.
@@ -46,7 +61,7 @@ It has three options:
 
 ### `run_code(language,codes)`
 
-* `language` is a string containing the name of the code runner to use.
+* `language` is a string containing the name of the code runner to use. The available code runners are `"pyodide"`, for Python, and `"webr"`, for R.
 * `codes` is a list of strings of code.
 
 Run some blocks of code and return the results in a `promise`.

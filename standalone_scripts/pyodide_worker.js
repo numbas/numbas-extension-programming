@@ -1,23 +1,31 @@
-importScripts("https://cdn.jsdelivr.net/pyodide/v0.21.0/full/pyodide.js");
+const pyodide_version = 'v0.24.1';
+const pyodide_indexURL = `https://cdn.jsdelivr.net/pyodide/${pyodide_version}/full/`;
+importScripts(pyodide_indexURL + 'pyodide.js');
 
 self.stdout = [];
 self.stderr = [];
 
-self.pyodidePromise;
+self.pyodidePromise = null;
 
-async function init() {
-    if(self.pyodidePromise) {
-        return self.pyodidePromise;
-    }
-    self.pyodidePromise = new Promise(async (resolve,reject) => {
-        self.pyodide = await loadPyodide({
-            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.21.0/full/",
+async function init(options, preamble) {
+    if(!self.pyodidePromise) {
+        preamble = preamble || "import os; os.environ['MPLBACKEND'] = 'AGG'";
+
+        const default_options = {
+            indexURL: pyodide_indexURL,
             stdout: s => self.stdout.push(s),
             stderr: s => self.stderr.push(s)
+        };
+        const final_options = Object.assign(default_options, options);
+
+        self.pyodidePromise = new Promise((resolve,reject) => {
+            loadPyodide(final_options).then(pyodide => {
+                self.pyodide = pyodide;
+                self.pyodide.runPython(preamble);
+                resolve(self.pyodide);
+            });
         });
-        self.pyodide.runPython("import os; os.environ['MPLBACKEND'] = 'AGG'");
-        resolve(self.pyodide);
-    });
+    }
     return self.pyodidePromise;
 }
 
@@ -32,15 +40,25 @@ self.get_namespace = async function(id) {
 }
 
 self.onmessage = async (event) => {
-    await init();
-
     const {command} = event.data;
 
     switch(command) {
+        case 'init': 
+            await init(event.data.options);
+            break;
+
+        case 'loadPackages':
+            await init();
+            self.pyodide.loadPackage(event.data.packages);
+            break;
+
         case 'setInterruptBuffer':
+            await init();
             self.pyodide.setInterruptBuffer(event.data.interruptBuffer);
             break;
+
         case 'runPython': 
+            await init();
             const { job_id, code, namespace_id } = event.data;
 
             self.stdout = [];
