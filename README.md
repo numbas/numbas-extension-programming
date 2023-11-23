@@ -75,6 +75,7 @@ The result of a code block is represented in a dictionary of the following form:
 * `success` - `true` if the code ran without errors, otherwise `false`.
 * `stdout` - The contents of the program's `STDOUT` buffer. This typically contains any text printed by the program.
 * `stderr` - The contents of the program's `STDERR` buffer. This typically contains any error messages produced by the program.
+* `images` - A list of any images produced by the code, in SVG format.
 * `error` - If the code threw an error, the text of the error.
 
 ### `variables_as_code(language, variables)`
