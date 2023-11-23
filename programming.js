@@ -664,8 +664,10 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                             const data = await webR.FS.readFile(path);
                             const blob = new Blob([data], {type: 'image/svg+xml'});
                             const text = await blob.text();
-                            images.push(text);
-                            await webR.FS.unlink(path);
+                            if(text) {
+                                images.push(text);
+                                await webR.FS.unlink(path);
+                            }
                         }
                     }
 
@@ -966,11 +968,11 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             }
             return new types.TPromise(programming.language_runners['webr'].load_webR().then(async (webR) => {
                 var promises = [];
-                files.forEach(filename => {
+                filenames.forEach(filename => {
                     promises.push(new Promise((resolve,reject) => {
                         setTimeout(async function() {
                             try {
-                                const buf = await webR.getFileData(filename);
+                                const buf = await webR.FS.readFile(filename);
                                 const extension = filename.match(/\.[^.]*$/)[0];
                                 const mime_type = mime_types[extension] || 'text/plain';
                                 var blob = new Blob([buf], {type: mime_type});
@@ -988,7 +990,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                 });
                 const results = await Promise.all(promises);
                 var o = {};
-                results.forEach((value,i) => { o[files[i]] = jme.wrapValue(value); });
+                results.forEach((value,i) => { o[filenames[i]] = jme.wrapValue(value); });
                 return {
                     r_files: new Numbas.jme.types.TDict(o)
                 }
