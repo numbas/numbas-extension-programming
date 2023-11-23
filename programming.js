@@ -575,7 +575,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
                 try {
 
-                    res = await shelter.captureR(code, { env: session.env });
+                    res = await shelter.captureR(code, { env: session.env, withAutoprint: true });
 
                 } catch(e) {
 
@@ -601,7 +601,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     } catch(e) {
                     }
 
-                    const stdout = output.filter(({type}) => type=='stdout').map(msg => msg.data).join('\n');
+                    // stdout sometimes includes lines that don't start with `[`, which I think should not be shown to the student.
+                    // For example, when you call `dev.off()`, something like `null device\n1` is printed to stdout, when webR is initialised with `withAutoprint: true`.
+                    const stdout = output.filter(({type, data}) => type=='stdout' && data.startsWith('[')).map(msg => msg.data).join('\n');
                     const stderr = output.filter(({type}) => type=='stderr').map(msg => msg.data).join('\n');
 
                     const images = [];
