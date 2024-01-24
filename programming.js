@@ -802,6 +802,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         },
         'set': function(tok) {
             return '{'+tok.value.map(wrapPython)+'}';
+        },
+        'nothing': function(tok) {
+            return 'None';
         }
     }
 
