@@ -293,11 +293,11 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             this.clear_buffers();
         }
 
-        /** Preload the files necessary to run code in this language, and optionally install a list of packages.
+        /** Preload the files necessary to run code in this language, and optionally install a list of packages and make files available from the question resources.
          *
-         * @param {Array.<string>} [packages] - Names of packages to install.
+         * @param {Numbas.extensions.programming.preload_options} options
          */
-        async preload(packages) {
+        async preload(options) {
         }
 
         /** Clear the STDOUT and STDERR buffers.
@@ -453,10 +453,12 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             super();
         }
 
-        load_pyodide(packages) {
+        load_pyodide(options) {
+            options = options || {};
             if(!this.pyodidePromise) {
                 this.pyodidePromise = new Promise((resolve, reject) => {
-                    var worker = this.worker = new Worker(Numbas.getStandaloneFileURL('programming', 'pyodide_worker.js'));
+                    const worker_url = Numbas.getStandaloneFileURL('programming', 'pyodide_worker.js');
+                    var worker = this.worker = new Worker(worker_url);
 
                     /* // Needs a cross-origin isolated context, which I can't work out how to achieve.
                     this.interruptBuffer = new Uint8Array(new SharedArrayBuffer(1));
@@ -467,9 +469,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     */
                     worker.postMessage({
                         command: 'init',
-                        options: {
-                            packages: packages || []
-                        }
+                        options
                     });
 
                     worker.onmessage = (event) => {
@@ -493,7 +493,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     resolve(worker);
                 });
             } else {
-                if(packages) {
+                if(options.packages) {
                     this.pyodidePromise.then(worker => {
                         worker.postMessage({
                             command: 'loadPackages',
@@ -505,8 +505,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             return this.pyodidePromise;
         }
 
-        async preload(packages) {
-            const worker = await this.load_pyodide(packages);
+        async preload(options) {
+            const worker = await this.load_pyodide(options);
+            return worker;
         }
 
         run_code(code, session) {
@@ -577,15 +578,13 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             return this.webRPromise;
         }
 
-        /** Preload the files necessary to run code in this language, and optionally install a list of packages.
-         *
-         * @param {Array.<string>} [packages] - Names of packages to install.
-         */
-        async preload(packages) {
+        async preload(options) {
             const webR = await this.load_webR();
+            const {packages} = options;
             if(packages !== undefined) {
-                await webR.installPackages(packages);
+                await webR.installPackages(options);
             }
+            return webR;
         }
 
         async r_to_js(obj) {
@@ -749,10 +748,25 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         }
     }
 
-    /** Preload the given language, and load the given list of packages.
+    /** Options for `preload`.
+     *
+     * @typedef {Numbas.extensions.programming.preload_options}
+     * @property {Array.<string>} packages - Names of packages to load.
+     * @property {Array.<string>} files - Names of files to load from the question resources, and make available under the path `/resources`.
      */
-    var preload = programming.preload = function(language, packages) {
-        language_runners[language].preload(packages);
+
+    /** Preload the given language, and load the given list of packages.
+     *
+     * @param {string} language - The name of the language runner to preload.
+     * @param {Numbas.extensions.programming.preload_options|Array.<string>} options - Either an object of options, or just a list of names of packages to load.
+     */
+    var preload = programming.preload = function(language, options) {
+        if(Array.isArray(options)) {
+            options = {
+                packages: options
+            };
+        }
+        return language_runners[language].preload(options);
     };
 
 //////////////////////////// SERIALIZE JME TO OTHER LANGUAGES
