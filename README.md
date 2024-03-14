@@ -38,12 +38,22 @@ pre_submit:
 If the scripts for a language have not already been loaded when you try to run some code, then they are loaded automatically.
 However, this can take a long time, depending on the speed of the student's internet connection.
 
-You can pre-load a language with the function `Numbas.extensions.programming.preload(language, packages)`. The list of packages to load is optional.
+You can pre-load a language with the function `Numbas.extensions.programming.preload(language, options)`.
 
-For example, if your question will use R with the packages `ggplot2` and `dplyr`, put this line in your question's JavaScript preamble:
+The `options` argument is optional and takes the following properties:
+
+<dl>
+    <dt><code>packages</code></dt>
+    <dd>A list of names of packages to load.</dd>
+    
+    <dt><code>files</code></dt>
+    <dd>A list of names of files uploaded to the question resources directory to load. They are available under the filesystem path <code>/resources</code>.</dd>
+</dl>
+
+For example, if your question will use R with the packages `ggplot2` and `dplyr` and rely on a file called `data.csv` uploaded as a question resource, put this line in your question's JavaScript preamble:
 
 ```
-Numbas.extensions.programming.preload('webr', ['ggplot2', 'dply']);
+Numbas.extensions.programming.preload('webr', {packages: ['ggplot2', 'dply'], files: ['data.csv']});
 ```
 
 The necessary files will start loading as soon as part of the exam loading process, so will usually be ready to use by the time the student submits some code.
