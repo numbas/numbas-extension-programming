@@ -580,10 +580,28 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
         async preload(options) {
             const webR = await this.load_webR();
-            const {packages} = options;
+
+            const {packages, files} = options;
+
             if(packages !== undefined) {
                 await webR.installPackages(options);
             }
+
+            if(files !== undefined) {
+                await webR.FS.mkdir('/resources')
+
+                const blobs = await Promise.all(files.map(async (name) => {
+                    const res = await fetch('resources/question-resources/'+name);
+                    const blob = await res.blob();
+                    return {name, data: blob};
+                }));
+
+                await webR.FS.mount("WORKERFS", {
+                    blobs,
+                    files: [], // Array of File objects or FileList
+                }, '/resources');
+            }
+
             return webR;
         }
 
