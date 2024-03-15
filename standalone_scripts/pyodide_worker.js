@@ -148,7 +148,6 @@ const message_handlers = {
 
 self.onmessage = async (event) => {
     const {command} = event.data;
-    console.log("Got message",command);
     
     const fn = message_handlers[command];
     if(!fn) {
