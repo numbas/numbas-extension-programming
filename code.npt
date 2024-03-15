@@ -30,7 +30,7 @@
     },
     "can_be_gap": true,
     "can_be_step": true,
-    "marking_script": "mark:\napply(main_error);\napply(show_images);\napply(matplotlib_feedback);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)\n\ninterpreted_answer:\nstudentAnswer\n\nmain_result:\ncode_result[3]\n\nmarking_results:\ncode_result[6..(len(settings[\"tests\"])+6)]\n\nvalidation_results:\ncode_result[(len(settings[\"tests\"])+6)..len(code_result)]\n\nmain_error:\nassert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nassert(main_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)\n\nmarking_test_feedback:\nmap(\n  let(\n    [name,weight,code], test,\n    header, \"<strong>Test: {name}</strong> \",\n    if(r[\"success\"],\n      let(\n        result, r[\"result\"],\n        max_credit, weight/total_weight,\n        credit, if(result isa \"number\", result, award(1,result)),\n        switch(\n          credit=0, negative_feedback(header+\"was not passed.\"),\n          credit=1, add_credit(max_credit, header+\"was passed.\"),\n                    add_credit(credit*max_credit, header+\"was partially passed.\")\n        )\n      )\n    ,\n      if(settings[\"show_marking_errors\"],\n        negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n      ,\n        negative_feedback(header+\"was not passed.\")\n      )\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)\n\nvalidation_test_feedback:\nmap(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)\n\ntotal_weight:\nsum(map(weight,[name,weight,code],settings[\"tests\"]))\n\npre_submit:\n[run_code(code_language,\n  [\n    matplotlib_preamble,\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"]),\n    matplotlib_postamble\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]\n\ncode_result:\npre_submit[\"code_result\"]\n\nmain_stdout:\nsafe(main_result[\"stdout\"])\n\ncode_language:\nsettings[\"code_language\"]\n\npreamble_result:\ncode_result[2]\n\npreamble_stderr:\npreamble_result[\"stderr\"]\n\npostamble_result:\ncode_result[4]\n\npostamble_stderr:\npostamble_result[\"stderr\"]\n\npostamble_feedback:\nassert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n);\nassert(postamble_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in the marking routine postamble: <pre>{postamble_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in the marking routine postamble.\")\n  )\n)\n\nmatplotlib_preamble:\nif(code_language=\"pyodide\",\n  safe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   plt.clf()   \n\"\"\"),\n  \"\"\n)\n\nmatplotlib_postamble:\nif(code_language=\"pyodide\",\n  safe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   fig = plt.gcf()\n   if fig.get_axes():\n      fig.savefig(sys.stdout, format='svg')\n\"\"\"),\n  \"\"\n)\n\nmatplotlib_result:\ncode_result[5]\n\nmatplotlib_feedback:\nassert(matplotlib_result[\"stdout\"]=\"\",\n  feedback(matplotlib_result[\"stdout\"])\n)\n\nimages:\nflatten(map(\n  get(r,\"images\",[]),\n  r,\n  code_result\n))\n\nshow_images:\nassert(len(images)=0 or not settings[\"show_stdout\"],\n  feedback(\"Your code produced the following images\");\n  map(\n    feedback(html(x)),\n    x,\n    images\n  )\n)",
+    "marking_script": "mark:\napply(main_error);\napply(show_images);\napply(matplotlib_feedback);\napply(postamble_feedback);\napply(validation_test_feedback);\napply(marking_test_feedback)\n\ninterpreted_answer:\nstudentAnswer\n\nmain_result:\ncode_result[3]\n\nmarking_results:\ncode_result[6..(len(settings[\"tests\"])+6)]\n\nvalidation_results:\ncode_result[(len(settings[\"tests\"])+6)..len(code_result)]\n\nmain_error:\nassert(main_stdout=\"\" or not settings[\"show_stdout\"],\n  feedback(\"Your code produced this output:<pre>\"+main_stdout+\"</pre>\")\n);\nassert(main_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in your code: <pre>{main_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in your code.\")\n  )\n)\n\nmarking_test_feedback:\nmap(\n  let(\n    [name,weight,code], test,\n    header, \"<strong>Test: {name}</strong> \",\n    if(r[\"success\"],\n      let(\n        result, r[\"result\"],\n        max_credit, weight/total_weight,\n        credit, if(result isa \"number\", result, award(1,result)),\n        switch(\n          credit=0, negative_feedback(header+\"was not passed.\"),\n          credit=1, add_credit(max_credit, header+\"was passed.\"),\n                    add_credit(credit*max_credit, header+\"was partially passed.\")\n        )\n      )\n    ,\n      if(settings[\"show_marking_errors\"],\n        negative_feedback(\"\"\"There was an error: <pre>{r[\"stderr\"]}</pre>\"\"\")\n      ,\n        negative_feedback(header+\"was not passed.\")\n      )\n    )\n  ),\n  [test,r],\n  zip(settings[\"tests\"],marking_results)\n)\n\nvalidation_test_feedback:\nmap(\n  let([name,code], test,\n    if(r[\"success\"],\n      if(r[\"result\"],\n        true\n      ,\n       fail(\"\"\"Your code failed the test <em>{name}</em>.\"\"\");false\n      )\n    ,\n      fail(\"\"\"There was an error running the test <em>{name}</em>: <pre>{r[\"stderr\"]}</pre>\"\"\")\n    )\n  ),\n  [test,r],\n  zip(settings[\"validation_tests\"],validation_results)\n)\n\ntotal_weight:\nsum(map(weight,[name,weight,code],settings[\"tests\"]))\n\npre_submit:\n[run_code(code_language,\n  [\n    matplotlib_preamble,\n    variables_as_code(language_synonym(code_language), settings[\"variables\"]),\n    render(settings[\"preamble\"]),\n    if(trim(settings[\"modifier\"])=\"\", studentAnswer, eval(expression(settings[\"modifier\"]))),\n    render(settings[\"postamble\"]),\n    matplotlib_postamble\n  ]\n  +map(code,[name,marks,code],settings[\"tests\"])\n  +map(code,[name,code],settings[\"validation_tests\"])\n)]\n\ncode_result:\npre_submit[\"code_result\"]\n\nmain_stdout:\nsafe(main_result[\"stdout\"])\n\ncode_language:\nsettings[\"code_language\"]\n\npreamble_result:\ncode_result[2]\n\npreamble_stderr:\npreamble_result[\"stderr\"]\n\npostamble_result:\ncode_result[4]\n\npostamble_stderr:\npostamble_result[\"stderr\"]\n\npostamble_feedback:\nassert(postamble_result[\"stdout\"]=\"\",\n  feedback(postamble_result[\"stdout\"])\n);\nassert(postamble_result[\"success\"],\n  if(settings[\"show_stderr\"],\n    fail(\"\"\"There was an error in the marking routine postamble: <pre>{postamble_result[\"stderr\"]}</pre>\"\"\")\n  ,\n    fail(\"There was an error in the marking routine postamble.\")\n  )\n)\n\nmatplotlib_preamble:\nif(code_language=\"pyodide\",\n  safe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   plt.clf()   \n\"\"\"),\n  \"\"\n)\n\nmatplotlib_postamble:\nif(code_language=\"pyodide\",\n  safe(\"\"\"\nimport sys\nif 'matplotlib' in sys.modules:\n   import matplotlib.pyplot as plt\n   fig = plt.gcf()\n   if fig.get_axes():\n      fig.savefig(sys.stdout, format='svg')\n\"\"\"),\n  \"\"\n)\n\nmatplotlib_result:\ncode_result[5]\n\nmatplotlib_feedback:\nassert(matplotlib_result[\"stdout\"]=\"\",\n  feedback(matplotlib_result[\"stdout\"])\n)\n\nimages:\nflatten(map(\n  get(r,\"images\",[]),\n  r,\n  code_result\n))\n\nshow_images:\nassert(len(images)=0 or not settings[\"show_stdout\"],\n  feedback(\"Your code produced the following {pluralise(len(images),'image','images')}:\");\n  map(\n    feedback(html(x)),\n    x,\n    images\n  )\n)",
     "marking_notes": [
         {
             "name": "mark",
@@ -150,7 +150,7 @@
         {
             "name": "show_images",
             "description": "<p>Show the images produced by the code.</p>",
-            "definition": "assert(len(images)=0 or not settings[\"show_stdout\"],\n  feedback(\"Your code produced the following images\");\n  map(\n    feedback(html(x)),\n    x,\n    images\n  )\n)"
+            "definition": "assert(len(images)=0 or not settings[\"show_stdout\"],\n  feedback(\"Your code produced the following {pluralise(len(images),'image','images')}:\");\n  map(\n    feedback(html(x)),\n    x,\n    images\n  )\n)"
         }
     ],
     "settings": [
@@ -191,9 +191,9 @@
         },
         {
             "name": "correct_answer_subvars",
-            "label": "Substitute question variables into the correct answer?",
+            "label": "Substitute question variables into the correct answer and placeholder?",
             "help_url": "",
-            "hint": "If ticked, then JME expressions between curly braces will be evaluated and substituted into the correct answer.<br /><br />If not ticked, then the correct answer will be displayed exactly as it is.",
+            "hint": "If ticked, then JME expressions between curly braces will be evaluated and substituted into the correct answer and the placeholder.<br /><br />If not ticked, then the correct answer and placeholder will be displayed exactly as they are.",
             "input_type": "checkbox",
             "default_value": true
         },
@@ -225,7 +225,7 @@
             "name": "placeholder",
             "label": "Placeholder",
             "help_url": "",
-            "hint": "Initial text for the code editor",
+            "hint": "Initial text for the code editor. Question variables are not substituted into this text.",
             "input_type": "code",
             "default_value": "",
             "evaluate": false
@@ -243,7 +243,7 @@
             "name": "preamble",
             "label": "Preamble",
             "help_url": "",
-            "hint": "This code is run before the student's code. Define anything that the student's code or your tests need.",
+            "hint": "This code is run before the student's code. Define anything that the student's code or your tests need. Expressions between curly braces are interpreted as variable substitution.",
             "input_type": "code",
             "default_value": "",
             "evaluate": false
@@ -252,7 +252,7 @@
             "name": "postamble",
             "label": "Postamble",
             "help_url": "",
-            "hint": "This code is run after the student's code but before the validation and unit tests.",
+            "hint": "This code is run after the student's code but before the validation and unit tests. Expressions between curly braces are interpreted as variable substitution.",
             "input_type": "code",
             "default_value": "",
             "evaluate": false
@@ -279,7 +279,7 @@
             "name": "variables",
             "label": "Variables to include in code",
             "help_url": "",
-            "hint": "Give a dictionary mapping variable names to their values. These variables will be available in the code that is run.",
+            "hint": "Give a dictionary mapping variable names in the target language to their values, as JME expressions. These variables will be available in the code that is run. Use this to make the value of a Numbas question variable available in code.",
             "input_type": "code",
             "default_value": "dict()",
             "evaluate": true
