@@ -625,7 +625,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
         run_code(code, session) {
             if(session !== undefined) {
-                code = code.replace(/\r/g,'');
+                code = code.replace(/\r\n?/g,'\n');
             }
 
             return this.enqueue(async () => {
