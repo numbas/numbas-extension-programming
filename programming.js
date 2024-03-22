@@ -784,7 +784,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                 packages: options
             };
         }
-        return language_runners[language].preload(options);
+        return language_runners[language].preload(options || {});
     };
 
 //////////////////////////// SERIALIZE JME TO OTHER LANGUAGES
