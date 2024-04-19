@@ -325,10 +325,11 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
         /** Create a session using this runner.
          *
+         * @param {string} [context_id] - The ID of the context in which to run the code.
          * @returns {Numbas.extensions.programming.CodeSession}
          */
-        new_session() {
-            return new CodeSession(this);
+        new_session(context_id) {
+            return new CodeSession(this, context_id);
         }
 
         /** Create a new namespace to run code in.
@@ -395,10 +396,11 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
          *  Empty blocks of code won't run, but will return result `undefined` and success `true`.
          *
          * @param {Array.<string>} codes - Blocks of code to run.
+         * @param {string} [context_id] - The ID of the context in which to run the code.
          * @returns {Promise.<Array.<Numbas.extensions.programming.run_result>>}
          */
-        async run_code_blocks(codes) {
-            const session = this.new_session();
+        async run_code_blocks(codes, context_id) {
+            const session = this.new_session(context_id);
             var results = [];
             for(let code of codes) {
                 if(code.trim()=='') {
@@ -423,14 +425,17 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     }
     programming.CodeRunner = CodeRunner;
 
-    /** An independent session to run code in.
-     *  Code run in one session should not affect code run in another.
-     *  @param {Numbas.extensions.programming.CodeRunner} runner
+    /** 
+     * An independent session to run code in.
+     * Code run in one session should not affect code run in another.
+     * @param {Numbas.extensions.programming.CodeRunner} runner
+     * @param {string} [context_id] - The ID of the context in which to run the code.
      */
     class CodeSession {
-        constructor(runner) {
+        constructor(runner, context_id) {
             this.runner = runner;
             this.namespace_id = runner.new_namespace();
+            this.context_id = context_id;
         }
 
         async run_code(code) {
@@ -492,16 +497,14 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
                     resolve(worker);
                 });
-            } else {
-                if(options.packages) {
-                    this.pyodidePromise.then(worker => {
-                        worker.postMessage({
-                            command: 'loadPackages',
-                            packages: packages
-                        });
-                    });
-                }
             }
+
+            this.pyodidePromise.then(worker => {
+                worker.postMessage({
+                    command: 'preload',
+                    options
+                });
+            });
             return this.pyodidePromise;
         }
 
@@ -517,6 +520,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     command: 'runPython',
                     job_id: job.id,
                     namespace_id: session.namespace_id,
+                    context_id: session.context_id,
                     code: code
                 });
             });
@@ -541,15 +545,61 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     class WebRRunner extends CodeRunner {
         constructor() {
             super();
+            this.contexts = {}
+
+            this.fs_mounted = false;
         }
 
-        async new_session() {
-            const session = await super.new_session();
+        get_context(context_id) {
+            context_id = context_id === undefined ? '' : context_id;
+            if(this.contexts[context_id] === undefined) {
+                this.contexts[context_id] = {
+                    files: []
+                };
+            }
+            
+            return this.contexts[context_id];
+        }
+
+        async use_context(context_id) {
+            const default_context = this.get_context();
+            const context = this.get_context(context_id);
+            let files = default_context.files;
+            if(context != default_context) {
+                files = files.concat(context.files);
+            }
+            await this.init_filesystem(files);
+        }
+
+        async init_filesystem(blobs) {
+            const webR = await this.load_webR();
+
+            const {FS} = webR;
+
+            const path = '/resources';
+
+            if(this.fs_mounted) {
+                await FS.unmount(path);
+            } else {
+                await FS.mkdir(path);
+            }
+
+            await FS.mount("WORKERFS", {
+                blobs,
+                files: [],
+            }, path);
+            
+            this.fs_mounted = true;
+        }
+
+        async new_session(context_id) {
+            const session = await super.new_session(context_id);
 
             const webR = await this.load_webR();
 
             session.shelter = await new webR.Shelter();
             session.env = await new webR.REnvironment();
+            session.files = [];
 
             return session;
         }
@@ -584,22 +634,16 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             const {packages, files} = options;
 
             if(packages !== undefined) {
-                await webR.installPackages(options);
+                await webR.installPackages(packages);
             }
 
             if(files !== undefined) {
-                await webR.FS.mkdir('/resources')
-
-                const blobs = await Promise.all(files.map(async (name) => {
+                const context = this.get_context(options.context_id);
+                await Promise.all(files.map(async (name) => {
                     const res = await fetch('resources/question-resources/'+name);
                     const blob = await res.blob();
-                    return {name, data: blob};
+                    context.files.push({name, data: blob});
                 }));
-
-                await webR.FS.mount("WORKERFS", {
-                    blobs,
-                    files: [], // Array of File objects or FileList
-                }, '/resources');
             }
 
             return webR;
@@ -634,18 +678,22 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                 const webR = await this.load_webR();
                 const shelter = session ? await session.shelter : webR.globalShelter;
 
+                await this.use_context(session.context_id);
+
                 if(session.last_value !== undefined) {
                     await session.env.bind('.Last.value', session.last_value);
                 }
 
-                let res;
+                let res, res2;
 
                 try {
 
-                    res = await shelter.captureR(code, { env: session.env, withAutoprint: true });
+                    const options = { env: session.env, withAutoprint: true };
+                    res = await shelter.captureR(code, options);
+                    res2 = await shelter.captureR("cat('\n')", options);
 
                 } catch(e) {
-
+                    console.error(e);
                     let message = e.message;
                     const m = message.match(/^<text>:(\d+?):(\d+?): ([\s\S]*)/m);
                     if(m) {
@@ -657,8 +705,10 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     };
 
                 } finally {
-
-                    const {output, result} = res;
+                    let {output, result} = res;
+                    if(res2) {
+                        output = output.concat(res2.output);
+                    }
 
                     session.last_value = result;
 
@@ -668,9 +718,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     } catch(e) {
                     }
 
-                    // stdout sometimes includes lines that don't start with `[`, which I think should not be shown to the student.
-                    // For example, when you call `dev.off()`, something like `null device\n1` is printed to stdout, when webR is initialised with `withAutoprint: true`.
-                    const stdout = output.filter(({type, data}) => type=='stdout' && data.startsWith('[')).map(msg => msg.data).join('\n');
+                    const stdout = output.filter(({type, data}) => type=='stdout').map(msg => msg.data).join('\n');
                     const stderr = output.filter(({type}) => type=='stderr').map(msg => msg.data).join('\n');
 
                     const images = [];
@@ -708,10 +756,11 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
          *  Empty blocks of code won't run, but will return result `undefined` and success `true`.
          *
          * @param {Array.<string>} codes - Blocks of code to run.
+         * @param {string} [context_id] - The ID of the context in which to run the code.
          * @returns {Promise.<Array.<Numbas.extensions.programming.run_result>>}
          */
-        async run_code_blocks(codes) {
-            const session = await this.new_session();
+        async run_code_blocks(codes, context_id) {
+            const session = await this.new_session(context_id);
             const results = await Promise.all(codes.map(async (code) => {
                 if(code.trim()=='') {
                     return {
@@ -750,13 +799,14 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     /** Run some blocks of code.
      *  The blocks are run one after the other, in the same session - sharing the same global scope.
      *
-     * @property {string} language - The language of the code to run.
-     * @property {Array.<string>} codes - Blocks of code to run. 
+     * @param {string} language - The language of the code to run.
+     * @param {Array.<string>} codes - Blocks of code to run. 
+     * @param {string} [context_id] - The ID of the context in which to run the code.
      * @returns {Promise.<Array.<Numbas.extensions.programming.run_result>>}
      */
-    var run_code = programming.run_code = async function(language, codes) {
+    var run_code = programming.run_code = async function(language, codes, context_id) {
         try {
-            return await language_runners[language].run_code_blocks(codes);
+            return await language_runners[language].run_code_blocks(codes, context_id);
         } catch(error_results) {
             return codes.map(() => { 
                 return {
@@ -932,11 +982,12 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
     /** Start a pre-submit task to mark some code against some unit tests.
      */
-    programming.scope.addFunction(new funcObj('run_code', ['string', 'list of string'], types.TPromise, null, {
+    programming.scope.addFunction(new funcObj('run_code', ['string', 'list of string', sig.optional(sig.type('string'))], types.TPromise, null, {
         evaluate: function(args, scope) {
             var language = args[0].value;
             var codes = args[1];
-            return new types.TPromise(run_code(language, jme.unwrapValue(codes)).then(function(result) {
+            var context_id = args[2].value || (scope.question ? scope.question.number : undefined);
+            return new types.TPromise(run_code(language, jme.unwrapValue(codes), context_id).then(function(result) {
                 return {code_result: jme.wrapValue(result)};
             }));
         }

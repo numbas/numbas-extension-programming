@@ -48,12 +48,15 @@ The `options` argument is optional and takes the following properties:
     
     <dt><code>files</code></dt>
     <dd>A list of names of files uploaded to the question resources directory to load. They are available under the filesystem path <code>/resources</code>.</dd>
+
+    <dt><code>context_id</code></dt>
+    <dd>An identifier for the context the files should be associated with.</dd>
 </dl>
 
 For example, if your question will use R with the packages `ggplot2` and `dplyr` and rely on a file called `data.csv` uploaded as a question resource, put this line in your question's JavaScript preamble:
 
 ```
-Numbas.extensions.programming.preload('webr', {packages: ['ggplot2', 'dply'], files: ['data.csv']});
+Numbas.extensions.programming.preload('webr', {packages: ['ggplot2', 'dply'], files: ['data.csv'], context_id: question.number});
 ```
 
 The necessary files will start loading as soon as part of the exam loading process, so will usually be ready to use by the time the student submits some code.
@@ -69,10 +72,11 @@ It has three options:
 
 ## JME functions
 
-### `run_code(language,codes)`
+### `run_code(language, codes, context_id)`
 
 * `language` is a string containing the name of the code runner to use. The available code runners are `"pyodide"`, for Python, and `"webr"`, for R.
 * `codes` is a list of strings of code.
+* `context_id` is an optional identifier for the filesystem context - this selects which preloaded files are available. By default this is the current question's number, if evaluated inside a question's scope.
 
 Run some blocks of code and return the results in a `promise`.
 
