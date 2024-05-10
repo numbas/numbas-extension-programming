@@ -777,8 +777,10 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     return error;
                 }
             }));
+            const webR = await this.load_webR();
             const shelter = await session.shelter;
             await shelter.purge();
+            await webR.globalShelter.purge();
             return results;
         }
     }
