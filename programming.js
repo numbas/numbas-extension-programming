@@ -619,7 +619,6 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                             const webR = new WebR.WebR();
                             await webR.init();
                             await webR.evalRVoid('webr::shim_install()');
-                            //await webR.evalRVoid('webr::global_prompt_install(show_menu = FALSE)', {withHandlers: false}); -- doesn't work in webR v0.2.2. See https://github.com/r-wasm/webr/issues/324
                             resolve(webR);
                         }
                     }, 50);
