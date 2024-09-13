@@ -687,7 +687,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
                 try {
 
-                    const options = { env: session.env, withAutoprint: true };
+                    const options = { env: session.env, withAutoprint: true, captureGraphics: false };
                     res = await shelter.captureR(code, options);
                     res2 = await shelter.captureR("cat('\n')", options);
 
@@ -704,10 +704,25 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     };
 
                 } finally {
-                    let {output, result} = res;
+                    let {output, result, images} = res;
                     if(res2) {
                         output = output.concat(res2.output);
                     }
+
+                    /* The following block looks for any Canvas images captured by webR, and converts
+                     * them to data URLs that can be inserted in HTML feedback.
+                     * At the moment the code is evaluated with `captureGraphics: false`, so no images
+                     * will be captured by webR. If we sort out how to get SVG and canvas images working
+                     * together, this code would be useful.
+                     */
+                    images = await Promise.all(images.map(async image => {
+                        const ocanvas = new OffscreenCanvas(image.width, image.height);
+                        const ctx = ocanvas.getContext('2d');
+                        ctx.drawImage(image,0,0);
+                        const blob = await ocanvas.toBlob();
+                        const url = URL.createObjectURL(blob);
+                        return `<img src="${url}">`;
+                    }));
 
                     session.last_value = result;
 
@@ -720,7 +735,6 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     const stdout = output.filter(({type, data}) => type=='stdout').map(msg => msg.data).join('\n');
                     const stderr = output.filter(({type}) => type=='stderr').map(msg => msg.data).join('\n');
 
-                    const images = [];
                     const homedir = '/home/web_user';
                     for(let f of Object.values((await webR.FS.lookupPath(homedir)).contents)) {
                         if(f.name.match(/^Rplot.*\.svg$/) && !f.isFolder) {
