@@ -700,7 +700,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     }
                     res = {
                         result: null,
-                        output: [{type:'stderr', data: message}]
+                        output: [{type:'stderr', data: message}],
+                        images: []
                     };
 
                 } finally {
