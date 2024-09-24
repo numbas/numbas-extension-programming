@@ -97,7 +97,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                     name: 'submit',
                     bindKey: {win: 'Ctrl-Enter',  mac: 'Command-Enter'},
                     exec: function(editor) {
-                        part.submit();
+                        part.display.controls.submit(false);
                     },
                     readOnly: true // false if this command should not apply in readOnly mode
                 });
