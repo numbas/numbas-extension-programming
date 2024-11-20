@@ -775,22 +775,26 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
          */
         async run_code_blocks(codes, context_id) {
             const session = await this.new_session(context_id);
-            const results = await Promise.all(codes.map(async (code) => {
-                if(code.trim()=='') {
-                    return {
-                        result: undefined,
-                        success: true,
-                        stdout: '',
-                        stderr: ''
+            const results = [];
+            for(let code of codes) {
+                const result = await (async function() {
+                    if(code.trim()=='') {
+                        return {
+                            result: undefined,
+                            success: true,
+                            stdout: '',
+                            stderr: ''
+                        }
                     }
-                }
-                try {
-                    const result = await session.run_code(code);
-                    return result;
-                } catch(error) {
-                    return error;
-                }
-            }));
+                    try {
+                        const result = await session.run_code(code);
+                        return result;
+                    } catch(error) {
+                        return error;
+                    }
+                })();
+                results.push(result);
+            }
             const webR = await this.load_webR();
             const shelter = await session.shelter;
             await shelter.purge();
