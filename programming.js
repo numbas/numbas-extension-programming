@@ -580,8 +580,16 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
             if(this.fs_mounted) {
                 await FS.unmount(path);
-            } else {
+                this.fs_mounted = false;
+            }
+
+            if(!blobs.length) {
+                return;
+            }
+
+            if(!this.fs_path_created) {
                 await FS.mkdir(path);
+                this.fs_path_created = true;
             }
 
             await FS.mount("WORKERFS", {
