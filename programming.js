@@ -35,20 +35,20 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
 //////////////////////////// CODE EDITOR WIDGET
 
-    Numbas.loadStandaloneScript('programming', 'ace/ace.js');
+    Numbas.loadStandaloneScript('programming', 'code-editor.js', 'module');
 
-    /** A promise which resolves when ace.js has put the `ace` object into the global scope.
+    /** A promise which resolves when the `<code-editor>` custom element is defined.
      */
-    var acePromise = new Promise(function(resolve, reject) {
+    var codeEditorPromise = new Promise(function(resolve, reject) {
         var checkInterval = setInterval(function() {
-            if(window.ace) {
+            if(customElements.get('code-editor')) {
                 clearInterval(checkInterval);
-                resolve(window.ace);
+                resolve();
             }
         }, 100);
     });
 
-    /** An ace code editor input widget for a part.
+    /** A code editor input widget for a part.
      *
      * @param {Element} element - The parent element of the widget.
      * @param {Numbas.parts.Part} part - The part whose answer the widget represents.
@@ -65,47 +65,33 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         this.answer_changed = answer_changed;
         this.options = options;
 
-        this.editorPromise = acePromise.then(function(ace) {
-            var editor = ace.edit(element);
+        this.editorPromise = codeEditorPromise.then(function() {
+            const editor = document.createElement('code-editor');
+
+            if(options.language) {
+                editor.setAttribute('language',options.language);
+            }
+
+            element.append(editor);
             ce.editor = editor;
 
-            var theme = options.theme || 'textmate';
-
-            editor.setTheme("ace/theme/"+theme);
-            editor.setShowPrintMargin(false);
-            editor.setHighlightActiveLine(false);
-            editor.setOptions({
-                maxLines: Infinity,
-                fontFamily: "monospace",
-                fontSize: "12pt"
-            });
-            if(options.language) {
-                editor.session.setMode("ace/mode/"+options.language);
-            }
-            editor.renderer.setScrollMargin(10, 10);
-
-            editor.session.on('change', function(e) {
+            editor.addEventListener('change', function(e) {
                 if(ce.setting_value) {
                     return;
                 }
-                var code = editor.getValue();
+                var code = editor.value;
                 ce.answer_changed({valid: true, value: code});
             });
 
-            if(ce.part) {
-                editor.commands.addCommand({
-                    name: 'submit',
-                    bindKey: {win: 'Ctrl-Enter',  mac: 'Command-Enter'},
-                    exec: function(editor) {
-                        part.display.controls.submit(false);
-                    },
-                    readOnly: true // false if this command should not apply in readOnly mode
-                });
+            if(part) {
+                editor.addEventListener('submit', function() {
+                    part.display.controls.submit(false);
+                })
             }
 
             if(ce.events) {
                 for(var x in ce.events) {
-                    editor.on(x, ce.events[x]);
+                    editor.addEventListener(x, e => ce.events[x](ce,e));
                 }
             }
             element.addEventListener('keyup', function(e) {
@@ -149,9 +135,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             if(code === undefined) {
                 code = '';
             }
-            if(code != editor.getValue()) {
-                editor.setValue(code);
-                editor.clearSelection();
+            if(code != editor.value) {
+                editor.value = code;
             }
             ce.setting_value = false;
         },
@@ -160,16 +145,14 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
          */
         disable: async function() {
             const editor = await this.editorPromise;
-            editor.setReadOnly(true);
-            editor.renderer.$cursorLayer.element.style.display = 'none';
+            editor.setAttribute('disabled', true);
         },
 
         /** Enable the widget - allow editing.
          */
         enable: async function() {
             const editor = await this.editorPromise;
-            editor.setReadOnly(false);
-            editor.renderer.$cursorLayer.element.style.display = 'block';
+            editor.removeAttribute('disabled');
         }
     }
 
@@ -237,31 +220,16 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         var element = document.createElement('div');
         element.classList.add('ace-editor-container');
 
-        acePromise.then(function(ace) {
-            var div = document.createElement('div');
-            div.classList.add('acediv');
-            element.appendChild(div);
-            var editor = ace.edit(div);
-            editor.setValue(code);
-            editor.clearSelection();
-            editor.setTheme(options.theme || "ace/theme/textmate");
+        // TODO
+        codeEditorPromise.then(function() {
+            const editor = document.createElement('code-editor');
+            editor.value = code;
             if(options.language) {
-                editor.session.setMode("ace/mode/"+options.language);
+                editor.setAttribute('language', options.language);
             }
-            editor.setShowPrintMargin(false);
-            editor.setHighlightActiveLine(false);
-            editor.setReadOnly(true);
-            editor.setOptions({
-                maxLines: Infinity
-            });
-            editor.renderer.setShowGutter(options.gutter);
-            editor.setOptions({
-                fontFamily: "monospace",
-                fontSize: "12pt"
-            });
-            editor.renderer.setScrollMargin(10, 10);
-            editor.renderer.$cursorLayer.element.style.display = "none";
-            return editor;
+            editor.setAttribute('disabled','true');
+
+            element.append(editor);
         })
 
         return element;
