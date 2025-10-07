@@ -1,6 +1,8 @@
 code-editor {
     display: block;
-    min-width: 30em;
+    min-width: min(90cqw, 30em);
+    max-width: calc(100cqw - 2 * var(--spacing));
+    overflow: auto;
     border: 1px solid;
     border-color: var(--border-color);
     margin-block: var(--half-space);
