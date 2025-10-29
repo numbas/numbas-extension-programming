@@ -970,13 +970,13 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             vars.push(name+' = '+wrapToken(language)(value));
         });
         return vars.join('\n');
-    }));
+    }, {random: false}));
   
     /** Return the synonym for given code language
      */
     programming.scope.addFunction(new funcObj('language_synonym', [TString], TString, function(language) {
         return language_synonym(language);
-    }));
+    }, {random: false}));
 
     /** Start a pre-submit task to mark some code against some unit tests.
      */
@@ -994,6 +994,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     /** Render a static code block.
      */
     programming.scope.addFunction(new funcObj('code_block', [TString, '[dict or string]'], types.THTML, null, {
+        random: false,
         evaluate: function(args, scope) {
             var code = jme.unwrapValue(args[0]);
             var options = jme.unwrapValue(args[1]);
@@ -1017,6 +1018,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     function add_jme_validation_test(test_name, fn, args) {
         args = (args || [TString]).slice();
         programming.scope.addFunction(new funcObj(test_name, args, TList, null, {
+            random: false,
             evaluate: function(args,scope) {
                 const [desc, code] = fn(...args.map(arg => Numbas.jme.unwrapValue(arg)));
                 return Numbas.jme.wrapValue([desc, code]);
@@ -1025,6 +1027,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     }
 
     programming.scope.addFunction(new funcObj('py_mark_equal', [TString, '?', sig.optional(sig.type('number'))], [TList], null, {
+        random: false,
         evaluate: function(args,scope) {
             var name = args[0].value;
             var value = wrapToken('python')(args[1]);
@@ -1043,6 +1046,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     }
 
     programming.scope.addFunction(new funcObj('r_load_files', ['string or (list of string)'], types.TPromise, null, {
+        random: false,
         evaluate: function(args,scope) {
             var filenames;
             if(args[0].type=='string') {
