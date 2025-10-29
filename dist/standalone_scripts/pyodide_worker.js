@@ -33,14 +33,14 @@ async function init(options) {
 async function preload(options) {
     await init();
 
-    const {packages, files, context_id} = options;
+    const {packages, files, context_id, root_url} = options;
 
     if(packages) {
         self.pyodide.loadPackage(packages);
     }
 
     if(files) {
-        load_files(files, context_id);
+        load_files(root_url, files, context_id);
     }
 }
 
@@ -72,22 +72,25 @@ function use_context(context_id) {
 }
 
 /**
- * Load a file from the question resources, and return a blob which can be used in the worker's resources filesystem.
- *
- * @param {string} name
- * @returns {Object} ``name`` and ``data: Blob``.
- */
-async function load_file(name) {
-    const res = await fetch('../../../resources/question-resources/'+name);
-    const blob = await res.blob();
-    return {name, data: blob};
-}
-
-/**
  * Load a list of files from the question resources, and store them in the context with the given ID.
  */
-async function load_files(filenames, context_id) {
+async function load_files(root_url, filenames, context_id) {
     const context = get_context(context_id);
+
+    root_url += 'resources/question-resources/';
+
+    /**
+     * Load a file from the question resources, and return a blob which can be used in the worker's resources filesystem.
+     *
+     * @param {string} name
+     * @returns {Object} ``name`` and ``data: Blob``.
+     */
+    async function load_file(name) {
+        const url = root_url + name;
+        const res = await fetch(url);
+        const data = await res.blob();
+        return {name, data};
+    }
 
     await Promise.all(filenames.map(async name => {
         const file = await load_file(name);

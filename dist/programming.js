@@ -467,6 +467,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                 });
             }
 
+            const root_url = new URL('.', window.location);
+            options.root_url = root_url.toString();
             this.pyodidePromise.then(worker => {
                 worker.postMessage({
                     command: 'preload',
