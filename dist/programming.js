@@ -1,6 +1,6 @@
 /** 
  * Programming extension for Numbas
- * by Chris Graham and Christian Lawson-Perfect & George Stagg, Newcastle University, 2020-2022
+ * by Chris Graham and Christian Lawson-Perfect and George Stagg, Newcastle University, 2020-2025
  *
  */
 Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programming) {
