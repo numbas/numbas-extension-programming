@@ -5,6 +5,18 @@
  */
 Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programming) {
 
+    // The maximum amount of the stdout/stderr contents to keep.
+    programming.MAX_BUFFER_LENGTH = 1 << 20;
+
+    function truncate_buffer(content) {
+        console.log(content.length);
+        if(content.length > programming.MAX_BUFFER_LENGTH) {
+            return content.slice(0, programming.MAX_BUFFER_LENGTH) + '...\n\nOutput has been truncated because it was too long.';
+        }
+        
+        return content;
+    }
+
     const remove_ansi_escapes = programming.remove_ansi_escapes = function(str) {
         return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g,'');
     }
@@ -730,8 +742,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
                     const out = {
                         result: js_result,
-                        stdout,
-                        stderr,
+                        stdout: stdout.slice,
+                        stderr: stderr.slice,
                         images
                     };
                     if(stderr.length) {
@@ -804,7 +816,12 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
      */
     var run_code = programming.run_code = async function(language, codes, context_id) {
         try {
-            return await language_runners[language].run_code_blocks(codes, context_id);
+            const results = await language_runners[language].run_code_blocks(codes, context_id);
+            results.forEach((result) => {
+                result.stdout = truncate_buffer(result.stdout);
+                result.stderr = truncate_buffer(result.stderr);
+            });
+            return results;
         } catch(error_results) {
             return codes.map(() => { 
                 return {
