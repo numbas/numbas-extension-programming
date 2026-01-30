@@ -742,8 +742,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
 
                     const out = {
                         result: js_result,
-                        stdout: stdout.slice,
-                        stderr: stderr.slice,
+                        stdout: stdout.slice(),
+                        stderr: stderr.slice(),
                         images
                     };
                     if(stderr.length) {
