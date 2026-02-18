@@ -9,7 +9,6 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     programming.MAX_BUFFER_LENGTH = 1 << 20;
 
     function truncate_buffer(content) {
-        console.log(content.length);
         if(content.length > programming.MAX_BUFFER_LENGTH) {
             return content.slice(0, programming.MAX_BUFFER_LENGTH) + '...\n\nOutput has been truncated because it was too long.';
         }
@@ -117,7 +116,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         });
         this.editorPromise.then(function(editor) {
             if(options.placeholder && !ce.value_set) {
+                ce.setting_value = true;
                 ce.setAnswerJSON({valid: true, value: options.placeholder});
+                ce.setting_value = false;
             }
         });
     };
