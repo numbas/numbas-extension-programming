@@ -1,5 +1,5 @@
 NODE_BIN=node_modules/.bin
-DEST=../dist
+DEST=../dist/standalone_scripts
 
 $(DEST)/code-editor.js: code-editor.bundle.mjs
 	cp $< $@

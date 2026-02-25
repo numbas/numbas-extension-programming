@@ -28004,6 +28004,7 @@ function codemirror_editor(language, options) {
     options = Object.assign({
         extensions: [
             basicSetup,
+            indentUnit.of('    '),
             Prec.highest(keymap.of([
                 {
                     key: 'Mod-Enter',

@@ -4,7 +4,7 @@ import {EditorState, Compartment} from "@codemirror/state";
 import {python} from "@codemirror/lang-python";
 import {r} from "codemirror-lang-r";
 import {javascript} from "@codemirror/lang-javascript";
-import {StreamLanguage} from "@codemirror/language"
+import {StreamLanguage, indentUnit} from "@codemirror/language"
 import { Prec } from "@codemirror/state";
 
 window.EditorView = EditorView;
@@ -24,6 +24,7 @@ export function codemirror_editor(language, options) {
     options = Object.assign({
         extensions: [
             basicSetup,
+            indentUnit.of('    '),
             Prec.highest(keymap.of([
                 {
                     key: 'Mod-Enter',
