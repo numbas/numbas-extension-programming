@@ -87,7 +87,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             ce.editor = editor;
 
             editor.addEventListener('change', function(e) {
-                if(ce.setting_value) {
+                if(editor.value == ce.setting_value) {
+                    ce.setting_value = false;
                     return;
                 }
                 var code = editor.value;
@@ -116,9 +117,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         });
         this.editorPromise.then(function(editor) {
             if(options.placeholder && !ce.value_set) {
-                ce.setting_value = true;
+                ce.setting_value = options.placeholder;
                 ce.setAnswerJSON({valid: true, value: options.placeholder});
-                ce.setting_value = false;
             }
         });
     };
@@ -143,15 +143,14 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
             if(answerJSON !== ce.most_recent_answer) {
                 return;
             }
-            ce.setting_value = true;
             var code = answerJSON.value;
+            ce.setting_value = code;
             if(code === undefined) {
                 code = '';
             }
             if(code != editor.value) {
                 editor.value = code;
             }
-            ce.setting_value = false;
         },
 
         /** Disable the widget - make it read-only.
