@@ -99,6 +99,10 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                 editor.addEventListener('submit', function() {
                     part.display.controls.submit(false);
                 })
+                if(options.placeholder) {
+                    part.storeAnswer(options.placeholder);
+                    part.setDirty(false);
+                }
             }
 
             if(ce.events) {
