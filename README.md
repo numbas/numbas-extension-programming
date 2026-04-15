@@ -44,11 +44,9 @@ The `options` argument is optional and takes the following properties:
 
 <dl>
     <dt><code>packages</code></dt>
-    <dd>A list of names of packages to load.</dd>
-    
+    <dd>A list of names of packages to load.</dd>    
     <dt><code>files</code></dt>
     <dd>A list of names of files uploaded to the question resources directory to load. They are available under the filesystem path <code>/resources</code>.</dd>
-
     <dt><code>context_id</code></dt>
     <dd>An identifier for the context the files should be associated with.</dd>
 </dl>
