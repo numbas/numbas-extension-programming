@@ -210,8 +210,8 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         scorm_storage: {
             interaction_type: function(part) { return 'fill-in'; },
             correct_answer: function(part) { return part.input_options().correctAnswer; },
-            student_answer: function(part) { return part.studentAnswer; },
-            load: function(part, data) { return data.answer; }
+            student_answer: function(part, answer) { return answer; },
+            load: function(part, answer) { return answer; }
         }
     });
 
