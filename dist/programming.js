@@ -9,6 +9,9 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     programming.MAX_BUFFER_LENGTH = 1 << 20;
 
     function truncate_buffer(content) {
+        if(content === undefined) {
+            return '';
+        }
         if(content.length > programming.MAX_BUFFER_LENGTH) {
             return content.slice(0, programming.MAX_BUFFER_LENGTH) + '...\n\nOutput has been truncated because it was too long.';
         }
