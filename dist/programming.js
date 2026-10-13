@@ -590,13 +590,7 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
         }
 
         async new_session(context_id) {
-            const session = await super.new_session(context_id);
-
-            const webR = await this.load_webR();
-
-            session.shelter = await new webR.Shelter();
-            session.env = await new webR.REnvironment();
-            session.files = [];
+            const session = new WebRCodeSession(this, context_id);
 
             return session;
         }
@@ -672,6 +666,11 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
                 const job = this.new_job();
 
                 const webR = await this.load_webR();
+
+                if(session) {
+                    await session.init();
+                }
+
                 const shelter = session ? await session.shelter : webR.globalShelter;
 
                 await this.use_context(session.context_id);
@@ -802,6 +801,22 @@ Numbas.addExtension('programming', ['display', 'util', 'jme'], function(programm
     programming.WebRRunner = WebRRunner;
 
     register_language_runner('webr', WebRRunner);
+
+    class WebRCodeSession extends CodeSession {
+        async init() {
+            if(!this.envPromise) {
+                this.envPromise = new Promise(async (resolve) => {
+                    const webR = await this.runner.load_webR();
+                    this.shelter = await new webR.Shelter();
+                    this.env = await new webR.REnvironment();
+                    this.files = [];
+
+                    resolve(this);
+                });
+            }
+            return this.envPromise;
+        }
+    }
 
     /** Results produced by `run_code`.
      *
